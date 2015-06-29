@@ -162,7 +162,7 @@ public class Simulator {
     static int loopsPerIndication = 0;
 
     private void ShowStillAlive() {
-        if (loopsPerIndication > 0 && loop_count >= loopsPerIndication) {
+        if ((loopsPerIndication > 0) && (loop_count >= loopsPerIndication)) {
             System.out.print(".");
             loop_count = 0;
         }
