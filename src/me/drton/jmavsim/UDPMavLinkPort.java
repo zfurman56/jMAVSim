@@ -113,6 +113,15 @@ public class UDPMavLinkPort extends MAVLinkPort {
 
     @Override
     public void handleMessage(MAVLinkMessage msg) {
+        if (debug) System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+
+        try {
+            SocketAddress remote = channel.getRemoteAddress();
+        } catch (IOException e) {
+            System.err.println(e.toString());
+        }
+
+
         if (isOpened()) {
             try {
                 stream.write(msg);
@@ -130,7 +139,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
                 if (msg == null) {
                     break;
                 }
-                //System.out.println("msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+                if (debug) System.out.println("msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
                 sendMessage(msg);
             } catch (IOException e) {
                 // Silently ignore this exception, we likely just have nobody on this port yet/already

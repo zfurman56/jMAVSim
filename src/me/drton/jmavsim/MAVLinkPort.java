@@ -17,4 +17,6 @@ public abstract class MAVLinkPort extends MAVLinkNode {
     public abstract void close() throws IOException;
 
     public abstract boolean isOpened();
+
+    public abstract void setDebug(boolean debug);
 }
