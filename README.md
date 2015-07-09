@@ -20,6 +20,12 @@ git submodule init
 git submodule update
 ```
 
+Install prerequisites via HomeBrew:
+
+```
+brew install ant
+```
+
 Compile:
 ```
 cd jMAVSim
