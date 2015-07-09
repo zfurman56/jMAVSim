@@ -20,7 +20,7 @@ public class Simulator {
     public static boolean USE_SERIAL_PORT = false;
     public static boolean COMMUNICATE_WITH_QGC = true;
     public static final int DEFAULT_AUTOPILOT_PORT = 14560;
-    public static final int DEFAULT_QGC_BIND_PORT = 14555;
+    public static final int DEFAULT_QGC_BIND_PORT = 0;
     public static final int DEFAULT_QGC_PEER_PORT = 14550;
     public static final String DEFAULT_SERIAL_PATH = "/dev/tty.usbmodem1";
     public static final int DEFAULT_SERIAL_BAUD_RATE = 230400;
@@ -280,42 +280,43 @@ public class Simulator {
                     return;
                 }
             } else if (arg.equals("-qgc")) {
-                if (i < args.length) {
-                    String firstArg = args[i++];
-                    try {
-                        String[] list = firstArg.split(":");
-                        if (list.length == 1) {
-                            // Only one argument turns off QGC if the arg is -1
-                            qgcBindPort = Integer.parseInt(list[0]);
-                            if (qgcBindPort < 0) {
-                                COMMUNICATE_WITH_QGC = false;
-                                continue;
-                            } else {
-                                System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(args));
-                                return;
-                            }
-                        } else if (list.length == 2) {
-                            qgcIpAddress = list[0];
-                            qgcPeerPort = Integer.parseInt(list[1]);
-                        } else {
-                            System.err.println("-qgc needs the correct number of arguments. Expected: " + QGC_STRING + ", got: " + Arrays.toString(args));
-                            return;
-                        }
-                        if (i < args.length) {
-                            // Parsed QGC peer IP and peer Port, or errored out already
-                            String secondArg = args[i++];
-                            qgcBindPort = Integer.parseInt(secondArg);
-                        } else {
-                            System.err.println("Wrong number of arguments. Expected: " + QGC_STRING + ", got: " + Arrays.toString(args));
-                        }
-                    } catch (NumberFormatException e) {
-                        System.err.println("Expected: " + USAGE_STRING + ", got: " + e.toString());
-                        return;
-                    }
-                } else {
-                    System.err.println("-qgc needs an argument: " + QGC_STRING);
-                    return;
-                }
+                COMMUNICATE_WITH_QGC = true;
+                // if (i < args.length) {
+                //     String firstArg = args[i++];
+                //     try {
+                //         String[] list = firstArg.split(":");
+                //         if (list.length == 1) {
+                //             // Only one argument turns off QGC if the arg is -1
+                //             //qgcBindPort = Integer.parseInt(list[0]);
+                //             if (qgcBindPort < 0) {
+                //                 COMMUNICATE_WITH_QGC = false;
+                //                 continue;
+                //             } else {
+                //                 System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(args));
+                //                 return;
+                //             }
+                //         } else if (list.length == 2) {
+                //             qgcIpAddress = list[0];
+                //             qgcPeerPort = Integer.parseInt(list[1]);
+                //         } else {
+                //             System.err.println("-qgc needs the correct number of arguments. Expected: " + QGC_STRING + ", got: " + Arrays.toString(args));
+                //             return;
+                //         }
+                //         if (i < args.length) {
+                //             // Parsed QGC peer IP and peer Port, or errored out already
+                //             String secondArg = args[i++];
+                //             qgcBindPort = Integer.parseInt(secondArg);
+                //         } else {
+                //             System.err.println("Wrong number of arguments. Expected: " + QGC_STRING + ", got: " + Arrays.toString(args));
+                //         }
+                //     } catch (NumberFormatException e) {
+                //         System.err.println("Expected: " + USAGE_STRING + ", got: " + e.toString());
+                //         return;
+                //     }
+                // } else {
+                //     System.err.println("-qgc needs an argument: " + QGC_STRING);
+                //     return;
+                // }
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
