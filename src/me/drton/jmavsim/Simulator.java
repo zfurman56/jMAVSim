@@ -141,6 +141,13 @@ public class Simulator {
 
         // Open ports
         autopilotMavLinkPort.open();
+
+        if (autopilotMavLinkPort instanceof SerialMAVLinkPort) {
+            // Special handling for PX4: Start MAVLink instance
+            SerialMAVLinkPort port = (SerialMAVLinkPort) autopilotMavLinkPort;
+            port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
+        }
+
         if (COMMUNICATE_WITH_QGC) {
             udpGCMavLinkPort.open();
         }
