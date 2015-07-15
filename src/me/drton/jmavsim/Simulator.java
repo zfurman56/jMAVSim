@@ -11,11 +11,14 @@ import javax.vecmath.Vector3d;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 
 /**
  * User: ton Date: 26.11.13 Time: 12:33
  */
-public class Simulator {
+public class Simulator implements Runnable {
 
     public static boolean USE_SERIAL_PORT = false;
     public static boolean COMMUNICATE_WITH_QGC = true;
@@ -37,7 +40,9 @@ public class Simulator {
     private World world;
     private int sleepInterval = 4;  // Main loop interval, in ms
     private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
-
+    private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private boolean shutdown = false;
+  
     public Simulator() throws IOException, InterruptedException, ParserConfigurationException, SAXException {
         // Create world
         world = new World();
@@ -152,12 +157,9 @@ public class Simulator {
             udpGCMavLinkPort.open();
         }
 
-        // Run
-        try {
-            run();
-        } catch (InterruptedException e) {
-            System.out.println("Exit");
-        }
+	executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MILLISECONDS);
+
+	while(!shutdown) Thread.sleep(1000);
 
         // Close ports
         autopilotMavLinkPort.close();
@@ -176,22 +178,15 @@ public class Simulator {
         loop_count++;
     }
 
-    public void run() throws IOException, InterruptedException {
-        long t = System.currentTimeMillis();
-        while (true) {
-            ShowStillAlive();
-            world.update(t);
-            long now = System.currentTimeMillis();
-            long nextRun = t + sleepInterval;
-            long timeLeft = nextRun - now;
-            if (timeLeft < -simDelayMax) {
-                System.out.printf("Skipped %s ms\n", -timeLeft);
-                nextRun = now;
-            } else if (timeLeft > 0) {
-                Thread.sleep(timeLeft);
-            }
-            t = nextRun;
-        }
+    public void run() {
+      try {
+       ShowStillAlive();
+       long t = System.currentTimeMillis();
+       world.update(t);
+      }
+      catch (Exception e) {
+	executor.shutdown();
+      }
     }
 
     public final static String PRINT_INDICATION_STRING = "-n <# of loops per indication>";
