@@ -10,7 +10,9 @@ import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
@@ -36,6 +38,9 @@ public class Simulator implements Runnable {
     private static int qgcPeerPort = DEFAULT_QGC_PEER_PORT;
     private static String serialPath = DEFAULT_SERIAL_PATH;
     private static int serialBaudRate = DEFAULT_SERIAL_BAUD_RATE;
+
+    private static HashSet<Integer> monitorMessageIds = new HashSet<Integer>();
+    private static boolean monitorMessage = false;
 
     private World world;
     private int sleepInterval = 4;  // Main loop interval, in ms
@@ -72,7 +77,13 @@ public class Simulator implements Runnable {
             UDPMavLinkPort port = new UDPMavLinkPort(schema);
             //port.setDebug(true);
             port.setup(0, autopilotIpAddress, autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
+            // monitor certain mavlink messages.
+            if (monitorMessage)  port.setMonitorMessageID(monitorMessageIds);
+
             autopilotMavLinkPort = port;
+
+
+
         }
 
         // allow HIL and GCS to talk to this port
@@ -166,21 +177,8 @@ public class Simulator implements Runnable {
         udpGCMavLinkPort.close();
     }
 
-
-    static int loop_count = 0;
-    static int loopsPerIndication = 0;
-
-    private void ShowStillAlive() {
-        if ((loopsPerIndication > 0) && (loop_count >= loopsPerIndication)) {
-            System.out.print(".");
-            loop_count = 0;
-        }
-        loop_count++;
-    }
-
     public void run() {
       try {
-       ShowStillAlive();
        long t = System.currentTimeMillis();
        world.update(t);
       }
@@ -189,7 +187,7 @@ public class Simulator implements Runnable {
       }
     }
 
-    public final static String PRINT_INDICATION_STRING = "-n <# of loops per indication>";
+    public final static String PRINT_INDICATION_STRING = "-m <comma-separated list of mavlink message IDs to monitor>";
     public final static String UDP_STRING = "-udp <autopilot ip address>:<autopilot port>";
     public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port> <qgc bind port>";
     public final static String SERIAL_STRING = "-serial <path> <baudRate>";
@@ -203,7 +201,7 @@ public class Simulator implements Runnable {
         if (args.length == 0) {
             USE_SERIAL_PORT = false;
         }
-        if (args.length > 6) {
+        if (args.length > 8) {
             System.err.println("Incorrect number of arguments. \n Usage: " + USAGE_STRING);
             return;
         }
@@ -215,11 +213,18 @@ public class Simulator implements Runnable {
                 handleHelpFlag();
                 return;
             }
-            if (arg.equalsIgnoreCase("-n")) {
+            if (arg.equalsIgnoreCase("-m")) {
+                monitorMessage = true;
                 if (i < args.length) {
                     String nextArg = args[i++];
                     try {
-                        loopsPerIndication = Integer.parseInt(nextArg);
+                        if (!nextArg.contains(",")) {
+                            monitorMessageIds.add(Integer.parseInt(nextArg));
+                        }
+                        String split[] = nextArg.split(",");
+                        for (String s : split) {
+                            monitorMessageIds.add(Integer.parseInt(s));
+                        }
                     } catch (NumberFormatException e) {
                         System.err.println("Expected: " + PRINT_INDICATION_STRING + ", got: " + Arrays.toString(args));
                         return;
