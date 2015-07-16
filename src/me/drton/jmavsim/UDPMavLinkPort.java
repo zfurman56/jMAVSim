@@ -124,7 +124,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
     @Override
     public void handleMessage(MAVLinkMessage msg) {
         if (debug) System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
-        IndicateReceivedMessage(msg.getMsgType());
+        
         try {
             SocketAddress remote = channel.getRemoteAddress();
         } catch (IOException e) {
