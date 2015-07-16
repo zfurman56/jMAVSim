@@ -79,11 +79,7 @@ public class Simulator implements Runnable {
             port.setup(0, autopilotIpAddress, autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
             // monitor certain mavlink messages.
             if (monitorMessage)  port.setMonitorMessageID(monitorMessageIds);
-
             autopilotMavLinkPort = port;
-
-
-
         }
 
         // allow HIL and GCS to talk to this port
@@ -218,6 +214,10 @@ public class Simulator implements Runnable {
                 if (i < args.length) {
                     String nextArg = args[i++];
                     try {
+                        if (nextArg.startsWith("-")) {
+                            // if user ONLY passes in -m, monitor all messages.
+                            continue;
+                        }
                         if (!nextArg.contains(",")) {
                             monitorMessageIds.add(Integer.parseInt(nextArg));
                         }
@@ -229,6 +229,9 @@ public class Simulator implements Runnable {
                         System.err.println("Expected: " + PRINT_INDICATION_STRING + ", got: " + Arrays.toString(args));
                         return;
                     }
+                } else {
+                    // if user ONLY passes in -m, monitor all messages.
+                    continue;
                 }
             }
             else if (arg.equalsIgnoreCase("-udp")) {

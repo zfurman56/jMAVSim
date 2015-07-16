@@ -124,7 +124,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
     @Override
     public void handleMessage(MAVLinkMessage msg) {
         if (debug) System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
-
+        IndicateReceivedMessage(msg.getMsgType());
         try {
             SocketAddress remote = channel.getRemoteAddress();
         } catch (IOException e) {
@@ -141,18 +141,39 @@ public class UDPMavLinkPort extends MAVLinkPort {
         }
     }
 
-    static int MONITOR_MESSAGE_RATE = 100; // print a . every MONITOR_MESSAGE_RATE updates.
+    static int MONITOR_MESSAGE_RATE = 100; // rate at which to print message info
+    static int TIME_PASSING = 10;         // change the print so it's visible to the user.
+    static int time = 0;
 
     private void IndicateReceivedMessage(int type) {
-       if (messageCounts.containsKey(type)) {
-           int count = messageCounts.get(type);
-           if (monitorMessage && count >= MONITOR_MESSAGE_RATE &&
-                   monitorMessageIDs.contains(type)) {
-               System.out.println(type);
-               messageCounts.put(type, 0);
-           } else {
-               messageCounts.put(type, count+1);
-           }
+        if (monitorMessage) {
+            boolean shouldPrint = false;
+            int count = 0;
+            // if the list of messages to monitor is empty, but the flag is on, monitor all messages.
+            if (monitorMessageIDs.isEmpty()) {
+                if (messageCounts.containsKey(type)) count = messageCounts.get(type);
+                shouldPrint = count >= MONITOR_MESSAGE_RATE;
+            } else {
+                // otherwise, only print messages in the list of message IDs we're monitoring.
+                if (messageCounts.containsKey(type)) count = messageCounts.get(type);
+                shouldPrint = count >= MONITOR_MESSAGE_RATE && monitorMessageIDs.contains(type);
+            }
+            printMessage(shouldPrint, count, type);
+        }
+    }
+
+    private void printMessage(boolean should, int count, int type) {
+        if (should) {
+            System.out.println(type);
+            messageCounts.put(type, 0);
+            if (time >= TIME_PASSING) {
+                System.out.println("---");
+                time = 0;
+            } else {
+                time++;
+            }
+        } else {
+            messageCounts.put(type, count+1);
         }
     }
 
