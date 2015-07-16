@@ -183,7 +183,7 @@ public class Simulator implements Runnable {
       }
     }
 
-    public final static String PRINT_INDICATION_STRING = "-m <comma-separated list of mavlink message IDs to monitor>";
+    public final static String PRINT_INDICATION_STRING = "-m <comma-separated list of mavlink message IDs to monitor. If none are listed, all messages will be monitored.>";
     public final static String UDP_STRING = "-udp <autopilot ip address>:<autopilot port>";
     public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port> <qgc bind port>";
     public final static String SERIAL_STRING = "-serial <path> <baudRate>";
