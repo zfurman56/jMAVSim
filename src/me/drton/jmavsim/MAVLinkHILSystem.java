@@ -46,6 +46,10 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
             if (!gotHeartBeat && sysId == msg.getInt(sysId)) {
                 gotHeartBeat = true;
                 initTime = t + initDelay;
+            } else if (!gotHeartBeat && sysId != msg.getInt(sysId)) {
+                System.out.println("WARNING: Got heartbeat from system #" + Integer.toString(msg.getInt(sysId)) +
+                    " but configured to only accept messages from system #" + Integer.toString(sysId) +
+                    ". Please change the system ID parameter to match in order to use HITL/SITL.");
             }
             if (!inited && t > initTime) {
                 System.out.println("Init MAVLink");
