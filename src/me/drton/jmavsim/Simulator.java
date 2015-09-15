@@ -3,16 +3,19 @@ package me.drton.jmavsim;
 import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
+import me.drton.jmavsim.vehicle.AbstractVehicle;
 import me.drton.jmavsim.vehicle.Quadcopter;
 import org.xml.sax.SAXException;
 
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Scanner;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
@@ -42,12 +45,17 @@ public class Simulator implements Runnable {
     private static HashSet<Integer> monitorMessageIds = new HashSet<Integer>();
     private static boolean monitorMessage = false;
 
+    Runnable keyboardWatcher;
+    Visualizer3D visualizer;
+    AbstractMulticopter vehicle;
+    CameraGimbal2D gimbal;
+
     private World world;
     private int sleepInterval = 4;  // Main loop interval, in ms
     private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private boolean shutdown = false;
-  
+
     public Simulator() throws IOException, InterruptedException, ParserConfigurationException, SAXException {
         // Create world
         world = new World();
@@ -105,6 +113,73 @@ public class Simulator implements Runnable {
         world.addObject(simpleEnvironment);
 
         // Create vehicle with sensors
+        vehicle = buildMulticopter();
+
+        // Create MAVLink HIL system
+        // SysId should be the same as autopilot, ComponentId should be different!
+        MAVLinkHILSystem hilSystem = new MAVLinkHILSystem(schema, 1, 51, vehicle);
+        connHIL.addNode(hilSystem);
+        world.addObject(vehicle);
+
+        // Create 3D visualizer
+        visualizer = new Visualizer3D(world);
+
+        setFPV();
+
+        // Put camera on vehicle with gimbal
+        gimbal = buildGimbal();
+        world.addObject(gimbal);
+
+        // Open ports
+        autopilotMavLinkPort.open();
+
+        if (autopilotMavLinkPort instanceof SerialMAVLinkPort) {
+            // Special handling for PX4: Start MAVLink instance
+            SerialMAVLinkPort port = (SerialMAVLinkPort) autopilotMavLinkPort;
+            port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
+        }
+
+        if (COMMUNICATE_WITH_QGC) {
+            udpGCMavLinkPort.open();
+        }
+
+
+        keyboardWatcher = new Runnable() {
+            InputStreamReader fileInputStream = new InputStreamReader(System.in);
+            BufferedReader bufferedReader = new BufferedReader(fileInputStream);
+            @Override
+            public void run() {
+
+                try {
+                    // get user input as a String
+                    String input = "";
+                    if (bufferedReader.ready()) {
+                        input = bufferedReader.readLine();
+                    }
+                    if(input.equals("f")) {
+                        setFPV();
+                    } else if (input.equals("g")) {
+                        setGimbal();
+                    } else if (input.equals("s")) {
+                        setStaticCamera();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        executor.scheduleAtFixedRate(keyboardWatcher, 0, 1, TimeUnit.MILLISECONDS);
+        executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MILLISECONDS);
+
+        while(!shutdown) Thread.sleep(1000);
+
+        // Close ports
+        autopilotMavLinkPort.close();
+        udpGCMavLinkPort.close();
+    }
+
+    private AbstractMulticopter buildMulticopter() throws IOException {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
         AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", 0.33 / 2, 4.0,
                 0.05, 0.005, gc);
@@ -122,65 +197,43 @@ public class Simulator implements Runnable {
         vehicle.setDragMove(0.02);
         //v.setDragRotate(0.1);
 
-        // Create MAVLink HIL system
-        // SysId should be the same as autopilot, ComponentId should be different!
-        MAVLinkHILSystem hilSystem = new MAVLinkHILSystem(schema, 1, 51, vehicle);
-        connHIL.addNode(hilSystem);
-        world.addObject(vehicle);
+        return vehicle;
+    }
 
-        // Create 3D visualizer
-        Visualizer3D visualizer = new Visualizer3D(world);
-
-        // Put camera on vehicle (FPV)
-        visualizer.setViewerPositionObject(vehicle);
-        visualizer.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
-
-        // Put camera on vehicle with gimbal
-        /*
-        CameraGimbal2D gimbal = new CameraGimbal2D(world);
+    private CameraGimbal2D buildGimbal() {
+        gimbal = new CameraGimbal2D(world);
         gimbal.setBaseObject(vehicle);
         gimbal.setPitchChannel(4);  // Control gimbal from autopilot
         gimbal.setPitchScale(1.57); // +/- 90deg
-        world.addObject(gimbal);
-        visualizer.setViewerPositionObject(gimbal);
-        */
+        return gimbal;
+    }
 
+    private void setFPV() {
+        // Put camera on vehicle (FPV)
+        visualizer.setViewerPositionObject(vehicle);
+        visualizer.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
+    }
+
+    private void setGimbal() {
+        visualizer.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
+        visualizer.setViewerPositionObject(gimbal);
+    }
+
+    private void setStaticCamera() {
         // Put camera on static point and point to vehicle
-        /*
         visualizer.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
         visualizer.setViewerTargetObject(vehicle);
-        */
-
-        // Open ports
-        autopilotMavLinkPort.open();
-
-        if (autopilotMavLinkPort instanceof SerialMAVLinkPort) {
-            // Special handling for PX4: Start MAVLink instance
-            SerialMAVLinkPort port = (SerialMAVLinkPort) autopilotMavLinkPort;
-            port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
-        }
-
-        if (COMMUNICATE_WITH_QGC) {
-            udpGCMavLinkPort.open();
-        }
-
-	executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MILLISECONDS);
-
-	while(!shutdown) Thread.sleep(1000);
-
-        // Close ports
-        autopilotMavLinkPort.close();
-        udpGCMavLinkPort.close();
     }
 
     public void run() {
-      try {
-       long t = System.currentTimeMillis();
-       world.update(t);
-      }
-      catch (Exception e) {
-	executor.shutdown();
-      }
+        try {
+            //keyboardWatcher.run();
+            long t = System.currentTimeMillis();
+            world.update(t);
+        }
+        catch (Exception e) {
+            executor.shutdown();
+        }
     }
 
     public final static String PRINT_INDICATION_STRING = "-m <comma-separated list of mavlink message IDs to monitor. If none are listed, all messages will be monitored.>";
@@ -324,7 +377,7 @@ public class Simulator implements Runnable {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
             }
-         }
+        }
 
         if (i != args.length) {
             System.err.println("Usage: " + USAGE_STRING);
