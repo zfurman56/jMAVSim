@@ -15,7 +15,7 @@ Java3D and JOGL/JOAL jars, including native libs for Linux (i586/64bit), Windows
 
 Clone repository and initialize submodules:
 ```
-git clone https://github.com/DrTon/jMAVSim
+git clone https://github.com/PX4/jMAVSim.git
 git submodule init
 git submodule update
 ```
