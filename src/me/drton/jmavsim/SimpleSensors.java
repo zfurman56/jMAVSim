@@ -26,6 +26,26 @@ public class SimpleSensors implements Sensors {
         globalProjector.init(object.getWorld().getGlobalReference());
     }
 
+    public Vector3d addZeroMeanNoise(Vector3d vIn, double var) {
+        double x0;
+        double b0, b1;
+
+        do {
+            b0 = Math.random();
+            b1 = Math.random();
+        } while (b0 <= Float.intBitsToFloat(0x1));
+
+        x0 = java.lang.Math.sqrt(-2.0 * java.lang.Math.log(b1)) * java.lang.Math.cos(Math.PI * 2.0 * b1);
+
+        double n = x0 * (var * var);
+
+        if (java.lang.Double.isFinite(n)) {
+            return new Vector3d(vIn.x + n, vIn.y + n, vIn.z + n);
+        } else {
+            return vIn;
+        }
+    }
+
     public void setGPSStartTime(long time) {
         gpsStartTime = time;
     }
@@ -49,12 +69,13 @@ public class SimpleSensors implements Sensors {
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(accBody);
+        accBody = addZeroMeanNoise(accBody, 0.8);
         return accBody;
     }
 
     @Override
     public Vector3d getGyro() {
-        return object.getRotationRate();
+        return addZeroMeanNoise(object.getRotationRate(), 0.5);
     }
 
     @Override
@@ -63,7 +84,7 @@ public class SimpleSensors implements Sensors {
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(mag);
-        return mag;
+        return addZeroMeanNoise(mag, 0.3);
     }
 
     @Override
