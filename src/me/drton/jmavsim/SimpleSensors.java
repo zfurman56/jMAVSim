@@ -35,7 +35,7 @@ public class SimpleSensors implements Sensors {
             b1 = Math.random();
         } while (b0 <= Float.intBitsToFloat(0x1));
 
-        x0 = java.lang.Math.sqrt(-2.0 * java.lang.Math.log(b1)) * java.lang.Math.cos(Math.PI * 2.0 * b1);
+        x0 = java.lang.Math.sqrt(-2.0 * java.lang.Math.log(b0)) * java.lang.Math.cos(Math.PI * 2.0 * b1);
 
         double n = x0 * (var * var);
 
