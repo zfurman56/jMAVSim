@@ -28,7 +28,6 @@ brew install ant
 
 Compile:
 ```
-cd jMAVSim
 ant
 ```
 

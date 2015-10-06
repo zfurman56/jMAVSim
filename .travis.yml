@@ -14,5 +14,4 @@ before_script:
   - git submodule update --recursive
 
 script:
-  - cd jMAVSim
   - ant
