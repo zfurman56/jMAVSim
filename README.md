@@ -1,17 +1,17 @@
-jMAVSim
-=======
+## jMAVSim ##
+
+[![Build Status](https://travis-ci.org/PX4/jMAVSim.svg?branch=master)](https://travis-ci.org/PX4/jMAVSim)
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/DrTon/jMAVSim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Simple multirotor simulator with MAVLink protocol support
 
-Installation
-------------
+### Installation ###
 
 Requirements:
-- Java 6 or newer (JDK, http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+ * Java 6 or newer (JDK, http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
-Java3D and JOGL/JOAL jars, including native libs for Linux (i586/64bit), Windows (i586/64bit) and Mac OS (universal) already included in this repository, no need to install it.
+ * Java3D and JOGL/JOAL jars, including native libs for Linux (i586/64bit), Windows (i586/64bit) and Mac OS (universal) already included in this repository, no need to install it.
 
 Clone repository and initialize submodules:
 ```
@@ -47,8 +47,7 @@ On **Windows** use `;` instead of `:` in -cp:
 java -cp lib/*;out/production/jmavsim.jar me.drton.jmavsim.Simulator
 ```
 
-Troubleshooting
----------------
+### Troubleshooting ###
 
 #### Java 3D
 
@@ -96,17 +95,15 @@ jMAVSim in this case works as bridge between ground station and autopilot (behav
 Make sure that jMAVSim and ground station use the same ports.
 In qgroundcontrol (or another GCS) you also need to add target host in UDP port configuration (localhost:14555), so both ends will know to which port they should send UDP packets.
 
-Developing
-----------
+### Development ###
 
-jMAVSim is not out-of-the-box simulator, but very flexible toolkit with a lot of ready to use blocks and designed to build custom simulation setups.
-All simulator configuration hardcoded in file `src/me/drton/jmavsim/Simulator.java`, this file _should_ be edited before running simulator.
+The simulator configuration is hardcoded in file `src/me/drton/jmavsim/Simulator.java`. Critical settings like port names or IP addresses can be provided as commandline arguments.
 
 New vehicle types (e.g. non standard multirotors configurations) can be added very easily.
 (But for fixed wing you will need some more aerodynamics knowledge).
 See files under `src/me/drton/jmavsim/vehicle/` as examples.
 
-Camera can be placed on any point, including gimabal, that can be controlled by autopilot, see `CameraGimbal2D` class and usage example (commented) in Simulator.java.
+The camera can be placed on any point, including gimabal, that can be controlled by autopilot, see `CameraGimbal2D` class and usage example (commented) in Simulator.java.
 
 Sensors data can be replayed from real flight log, use `LogPlayerSensors` calss for this.
 
