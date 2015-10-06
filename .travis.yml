@@ -7,7 +7,7 @@ before_script:
   - git submodule update
 
 language: java
-install: ant deps
+install: ant
 
 jdk:
   - openjdk7
