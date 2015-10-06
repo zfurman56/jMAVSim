@@ -1,0 +1,15 @@
+
+# use travis-ci docker based infrastructure
+sudo: false
+
+before_script:
+  - git submodule init --recursive
+  - git submodule update
+
+language: java
+install: ant deps
+
+jdk:
+  - openjdk7
+  - oraclejdk7
+  - oraclejdk8
