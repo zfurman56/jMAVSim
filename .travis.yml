@@ -3,8 +3,8 @@
 sudo: false
 
 before_script:
-  - git submodule init --recursive
-  - git submodule update
+  - git submodule init
+  - git submodule update --recursive
 
 language: java
 install: ant
