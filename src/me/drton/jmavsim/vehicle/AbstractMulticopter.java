@@ -32,47 +32,69 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
         builder.append(newLine);
         builder.append(newLine);
 
+        builder.append("CONTROLS");
+        builder.append(newLine);
+        builder.append("--------");
+        builder.append(newLine);
+
+        if (getControl().size() > 0) {
+            for (int i = 0; i < getControl().size(); i++) {
+                builder.append(Double.toString(getControl().get(i)));
+                builder.append(newLine);
+            }
+        } else {
+            builder.append("n/a");
+            builder.append(newLine);
+        }
+
+        builder.append(newLine);
+
         for (int i = 0; i < getRotorsNum(); i++) {
-            builder.append("ROTOR #");
-            builder.append(i);
-            builder.append(newLine);
-            builder.append("--------");
-            builder.append(newLine);
-
-            builder.append("Control: ");
-            builder.append(rotors[i].getControl());
-            builder.append(newLine);
-
-            builder.append("Thrust: ");
-            builder.append(rotors[i].getThrust());
-            builder.append(" / ");
-            builder.append(rotors[i].getFullThrust());
-            builder.append(" [N]");
-            builder.append(newLine);
-
-            builder.append("Torque: ");
-            builder.append(rotors[i].getThrust());
-            builder.append(" / ");
-            builder.append(rotors[i].getFullTorque());
-            builder.append(" [N * m]");
-            builder.append(newLine);
-
-            builder.append("Spin up: ");
-            builder.append(rotors[i].getTimeConstant());
-            builder.append(" [s]");
-            builder.append(newLine);
-
-            builder.append("Position: ");
-            builder.append(ReportUtil.toShortString(getRotorPosition(i)));
-            builder.append(newLine);
-
-            builder.append(newLine);
+            reportRotor(builder, i);
         }
 
         builder.append(ReportingObject.newLine);
         builder.append(ReportingObject.newLine);
     }
 
+    private void reportRotor(StringBuilder builder, int rotorIndex) {
+        Rotor rotor = rotors[rotorIndex];
+
+        builder.append("ROTOR #");
+        builder.append(rotorIndex);
+        builder.append(newLine);
+        builder.append("--------");
+        builder.append(newLine);
+
+        builder.append("Control: ");
+        builder.append(rotor.getControl());
+        builder.append(newLine);
+
+        builder.append("Thrust: ");
+        builder.append(rotor.getThrust());
+        builder.append(" / ");
+        builder.append(rotor.getFullThrust());
+        builder.append(" [N]");
+        builder.append(newLine);
+
+        builder.append("Torque: ");
+        builder.append(rotor.getThrust());
+        builder.append(" / ");
+        builder.append(rotor.getFullTorque());
+        builder.append(" [N * m]");
+        builder.append(newLine);
+
+        builder.append("Spin up: ");
+        builder.append(rotor.getTimeConstant());
+        builder.append(" [s]");
+        builder.append(newLine);
+
+        builder.append("Position: ");
+        builder.append(ReportUtil.toShortString(getRotorPosition(rotorIndex)));
+        builder.append(newLine);
+
+        builder.append(newLine);
+    }
 
     /**
      * Get number of rotors.
