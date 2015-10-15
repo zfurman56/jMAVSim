@@ -6,7 +6,7 @@ import java.util.Random;
 /**
  * User: ton Date: 28.11.13 Time: 22:40
  */
-public class SimpleEnvironment extends Environment {
+public class SimpleEnvironment extends Environment implements ReportingObject {
     private Vector3d magField = new Vector3d(1.0, 0.0, 0.0);
     private Vector3d wind = new Vector3d(0.0, 0.0, 0.0);
     private double groundLevel = 0.0;
@@ -16,6 +16,24 @@ public class SimpleEnvironment extends Environment {
     private Vector3d windCurrent = new Vector3d(0.0, 0.0, 0.0);
     private Random random = new Random();
     private long lastTime = 0;
+
+    public void report(StringBuilder builder) {
+        builder.append("ENVIRONMENT");
+        builder.append(newLine);
+        builder.append("===========");
+        builder.append(newLine);
+
+        builder.append("G: ");
+        builder.append(ReportUtil.toShortString(g));
+        builder.append(newLine);
+
+        builder.append("Wind: ");
+        builder.append(ReportUtil.toShortString(windCurrent));
+        builder.append(newLine);
+
+        builder.append(newLine);
+        builder.append(newLine);
+    }
 
     public SimpleEnvironment(World world) {
         super(world);

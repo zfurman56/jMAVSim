@@ -3,7 +3,6 @@ package me.drton.jmavsim;
 import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
-import me.drton.jmavsim.vehicle.AbstractVehicle;
 import me.drton.jmavsim.vehicle.Quadcopter;
 import org.xml.sax.SAXException;
 
@@ -15,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Scanner;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
@@ -125,6 +123,9 @@ public class Simulator implements Runnable {
         visualizer = new Visualizer3D(world);
 
         setFPV();
+
+        // Create simulation report updater
+        world.addObject(new ReportUpdater(world, visualizer));
 
         // Put camera on vehicle with gimbal
         gimbal = buildGimbal();

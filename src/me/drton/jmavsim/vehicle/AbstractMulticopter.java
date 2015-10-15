@@ -1,5 +1,7 @@
 package me.drton.jmavsim.vehicle;
 
+import me.drton.jmavsim.ReportUtil;
+import me.drton.jmavsim.ReportingObject;
 import me.drton.jmavsim.Rotor;
 import me.drton.jmavsim.World;
 
@@ -10,7 +12,7 @@ import java.io.FileNotFoundException;
  * Abstract multicopter class. Does all necessary calculations for multirotor with any placement of rotors.
  * Only rotors on one plane supported now.
  */
-public abstract class AbstractMulticopter extends AbstractVehicle {
+public abstract class AbstractMulticopter extends AbstractVehicle implements ReportingObject {
     private double dragMove = 0.0;
     private double dragRotate = 0.0;
     protected Rotor[] rotors;
@@ -22,6 +24,55 @@ public abstract class AbstractMulticopter extends AbstractVehicle {
             rotors[i] = new Rotor();
         }
     }
+
+    public void report(StringBuilder builder) {
+        builder.append("MULTICOPTER");
+        builder.append(newLine);
+        builder.append("===========");
+        builder.append(newLine);
+        builder.append(newLine);
+
+        for (int i = 0; i < getRotorsNum(); i++) {
+            builder.append("ROTOR #");
+            builder.append(i);
+            builder.append(newLine);
+            builder.append("--------");
+            builder.append(newLine);
+
+            builder.append("Control: ");
+            builder.append(rotors[i].getControl());
+            builder.append(newLine);
+
+            builder.append("Thrust: ");
+            builder.append(rotors[i].getThrust());
+            builder.append(" / ");
+            builder.append(rotors[i].getFullThrust());
+            builder.append(" [N]");
+            builder.append(newLine);
+
+            builder.append("Torque: ");
+            builder.append(rotors[i].getThrust());
+            builder.append(" / ");
+            builder.append(rotors[i].getFullTorque());
+            builder.append(" [N * m]");
+            builder.append(newLine);
+
+            builder.append("Spin up: ");
+            builder.append(rotors[i].getTimeConstant());
+            builder.append(" [s]");
+            builder.append(newLine);
+
+            builder.append("Position: ");
+            builder.append(ReportUtil.toShortString(getRotorPosition(i)));
+            builder.append(newLine);
+
+            builder.append(newLine);
+        }
+
+        builder.append(ReportingObject.newLine);
+        builder.append(ReportingObject.newLine);
+    }
+
 
     /**
      * Get number of rotors.
