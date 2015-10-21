@@ -78,21 +78,29 @@ public class UDPMavLinkPort extends MAVLinkPort {
         // Look over all the network interfaces for the appropriate interface.
         Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
         while (networkInterfaces.hasMoreElements()) {
-           NetworkInterface iface = networkInterfaces.nextElement();
-           Enumeration<InetAddress> addresses = iface.getInetAddresses();
-           while (addresses.hasMoreElements()) {
-               InetAddress address = addresses.nextElement();
-               if (!address.isLoopbackAddress()) {
-                   if (address.isSiteLocalAddress()) {
-                       // probably a good one!
-                       return address;
-                   } else {
-                       // Found a non-loopback address that isn't site local.
-                       // Might be link local (private network), but probably better than nothing.
-                       possibleAddress = address;
-                   }
-               }
-           }
+            NetworkInterface iface = networkInterfaces.nextElement();
+            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+            while (addresses.hasMoreElements()) {
+                InetAddress address = addresses.nextElement();
+                if (!address.isLoopbackAddress()) {
+                    if (address.isSiteLocalAddress()) {
+                        // probably a good one!
+                        return address;
+                    } else {
+                        // Found a non-loopback address that isn't site local.
+                        // Might be link local (private network), but probably better than nothing.
+                        possibleAddress = address;
+                        // Return the first IPV4 address we find.
+                        if(address instanceof Inet4Address) {
+                            return address;
+                        } else {
+                            System.out.println("Found a non-IPv4 address: " + address);
+                            // IPv6 may cause the system to crash
+                            possibleAddress = null;
+                        }
+                    }
+                }
+            }
         }
         // At this point, if we haven't found a better option, we better just take whatever Java thinks is best.
         if (possibleAddress == null) {
