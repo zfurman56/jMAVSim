@@ -90,9 +90,13 @@ public class UDPMavLinkPort extends MAVLinkPort {
                         // Found a non-loopback address that isn't site local.
                         // Might be link local (private network), but probably better than nothing.
                         possibleAddress = address;
+                        // Return the first IPV4 address we find.
                         if(address instanceof Inet4Address) {
-                            possibleAddress = address;
-                            break;
+                            return address;
+                        } else {
+                            System.out.println("Found a non-IPv4 address: " + address);
+                            // IPv6 may cause the system to crash
+                            possibleAddress = null;
                         }
                     }
                 }
