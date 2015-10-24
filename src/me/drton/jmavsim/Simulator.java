@@ -51,7 +51,7 @@ public class Simulator implements Runnable {
     CameraGimbal2D gimbal;
 
     private World world;
-    private int sleepInterval = 4;  // Main loop interval, in ms
+    private int sleepInterval = 1;  // Main loop interval, in ms
     private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private boolean shutdown = false;
@@ -192,7 +192,7 @@ public class Simulator implements Runnable {
         vehicle.setMomentOfInertia(I);
         SimpleSensors sensors = new SimpleSensors();
         sensors.setGPSDelay(200);
-        sensors.setGPSStartTime(System.currentTimeMillis() + 20000);
+        sensors.setGPSStartTime(System.currentTimeMillis() + 5000);
         vehicle.setSensors(sensors);
         vehicle.setDragMove(0.02);
         //v.setDragRotate(0.1);
