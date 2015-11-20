@@ -192,7 +192,7 @@ public class Simulator implements Runnable {
         vehicle.setMomentOfInertia(I);
         SimpleSensors sensors = new SimpleSensors();
         sensors.setGPSDelay(200);
-        sensors.setGPSStartTime(System.currentTimeMillis() + 5000);
+        sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
         vehicle.setSensors(sensors);
         vehicle.setDragMove(0.02);
         //v.setDragRotate(0.1);
