@@ -42,4 +42,13 @@ public abstract class Environment extends WorldObject {
      * @return ground level in NED frame
      */
     public abstract double getGroundLevel(Vector3d point);
+
+    /**
+     * Get the mag declination at this point
+     *
+     * @param lat latitude in degrees
+     * @param lon longitude in degrees
+     * @return mag declination in degrees
+     */
+    public abstract double getMagDeclination(double lat, double lon);
 }

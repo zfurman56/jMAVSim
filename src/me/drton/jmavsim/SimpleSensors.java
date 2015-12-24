@@ -1,6 +1,7 @@
 package me.drton.jmavsim;
 
 import me.drton.jmavlib.geo.GlobalPositionProjector;
+import me.drton.jmavlib.conversion.RotationConversion;
 import me.drton.jmavlib.processing.DelayLine;
 
 import javax.vecmath.Matrix3d;
@@ -86,6 +87,12 @@ public class SimpleSensors implements Sensors {
     @Override
     public Vector3d getMag() {
         Vector3d mag = new Vector3d(object.getWorld().getEnvironment().getMagField(object.getPosition()));
+
+        double declination = (object.getWorld().getEnvironment().getMagDeclination(gps.position.lat / Math.PI * 180.0, gps.position.lon / Math.PI / 180.0) / 180.0) * Math.PI;
+
+        Matrix3d rotDecl = new Matrix3d(RotationConversion.rotationMatrixByEulerAngles(0.0, 0.0, declination));
+        //rotDecl.transform(mag);
+
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(mag);
