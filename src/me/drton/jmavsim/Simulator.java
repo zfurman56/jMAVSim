@@ -51,8 +51,8 @@ public class Simulator implements Runnable {
     CameraGimbal2D gimbal;
 
     private World world;
-    private int sleepInterval = 4;  // Main loop interval, in ms
-    private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
+    private int sleepInterval = 2;  // Main loop interval, in ms
+    private int simDelayMax = 10;  // Max delay between simulated and real time to skip samples in simulator, in ms
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private boolean shutdown = false;
 
