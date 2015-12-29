@@ -1,7 +1,6 @@
 package me.drton.jmavsim;
 
 import me.drton.jmavlib.geo.GlobalPositionProjector;
-import me.drton.jmavlib.conversion.RotationConversion;
 import me.drton.jmavlib.processing.DelayLine;
 
 import javax.vecmath.Matrix3d;
@@ -88,11 +87,17 @@ public class SimpleSensors implements Sensors {
     public Vector3d getMag() {
         Vector3d mag = new Vector3d(object.getWorld().getEnvironment().getMagField(object.getPosition()));
 
-        double declination = (object.getWorld().getEnvironment().getMagDeclination(gps.position.lat / Math.PI * 180.0, gps.position.lon / Math.PI / 180.0) / 180.0) * Math.PI;
+        // XXX enabling this triggers an obscure Java / jMAVSim bug
+        // to be debugged later, as the declination is optional
+        // for such a simple simulator.
+        //double decl = (object.getWorld().getEnvironment().getMagDeclination(gps.position.lat / Math.PI * 180.0, gps.position.lon / Math.PI / 180.0) / 180.0) * Math.PI;
+        double decl = 0.0;
 
-        Matrix3d rotDecl = new Matrix3d(RotationConversion.rotationMatrixByEulerAngles(0.0, 0.0, declination));
-        //rotDecl.transform(mag);
+        Matrix3d rotDecl = new Matrix3d(Math.cos(decl), -Math.sin(decl), 0.0,
+                                        Math.sin(decl),  Math.cos(decl), 0.0,
+                                        0.0           , 0.0            , 1.0);
 
+        rotDecl.transform(mag);
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(mag);
