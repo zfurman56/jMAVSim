@@ -56,7 +56,7 @@ public abstract class DynamicObject extends KinematicObject {
                 acceleration.y = -velocity.y / dt;
                 acceleration.z = -velocity.z / dt;
                 position.z = getWorld().getEnvironment().getGroundLevel(position);
-                //rotationRate.set(0.0, 0.0, 0.0);
+                rotationRate.set(0.0, 0.0, 0.0);
             }
             Vector3d dVel = new Vector3d(acceleration);
             dVel.scale(dt);
