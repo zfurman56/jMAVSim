@@ -43,11 +43,11 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                     msg.getDouble("aux2"), msg.getDouble("aux3"), msg.getDouble("aux4"));
             vehicle.setControl(control);
         } else if ("HEARTBEAT".equals(msg.getMsgName())) {
-            if (!gotHeartBeat && sysId == msg.getInt(sysId)) {
+            if (!gotHeartBeat && sysId == msg.systemID) {
                 gotHeartBeat = true;
                 initTime = t + initDelay;
-            } else if (!gotHeartBeat && sysId != msg.getInt(sysId)) {
-                System.out.println("WARNING: Got heartbeat from system #" + Integer.toString(msg.getInt(sysId)) +
+            } else if (!gotHeartBeat && sysId != msg.systemID) {
+                System.out.println("WARNING: Got heartbeat from system #" + Integer.toString(msg.systemID) +
                     " but configured to only accept messages from system #" + Integer.toString(sysId) +
                     ". Please change the system ID parameter to match in order to use HITL/SITL.");
             }
