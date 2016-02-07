@@ -7,7 +7,7 @@ import java.util.Random;
  * User: ton Date: 28.11.13 Time: 22:40
  */
 public class SimpleEnvironment extends Environment {
-    private Vector3d magField = new Vector3d(1.0, 0.0, 0.0);
+    private Vector3d magField = new Vector3d(0.21523, 0.0, 0.42741);
     private Vector3d wind = new Vector3d(0.0, 0.0, 0.0);
     private double groundLevel = 0.0;
     private Vector3d g = new Vector3d(0.0, 0.0, 9.80665);

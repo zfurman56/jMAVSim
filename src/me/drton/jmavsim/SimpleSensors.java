@@ -86,18 +86,6 @@ public class SimpleSensors implements Sensors {
     @Override
     public Vector3d getMag() {
         Vector3d mag = new Vector3d(object.getWorld().getEnvironment().getMagField(object.getPosition()));
-
-        // XXX enabling this triggers an obscure Java / jMAVSim bug
-        // to be debugged later, as the declination is optional
-        // for such a simple simulator.
-        //double decl = (object.getWorld().getEnvironment().getMagDeclination(gps.position.lat / Math.PI * 180.0, gps.position.lon / Math.PI / 180.0) / 180.0) * Math.PI;
-        double decl = 0.0;
-
-        Matrix3d rotDecl = new Matrix3d(Math.cos(decl), -Math.sin(decl), 0.0,
-                                        Math.sin(decl),  Math.cos(decl), 0.0,
-                                        0.0           , 0.0            , 1.0);
-
-        rotDecl.transform(mag);
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(mag);

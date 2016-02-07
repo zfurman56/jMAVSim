@@ -9,6 +9,7 @@ import org.xml.sax.SAXException;
 
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
+import java.lang.Math;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -60,7 +61,11 @@ public class Simulator implements Runnable {
         // Create world
         world = new World();
         // Set global reference point
-        world.setGlobalReference(new LatLonAlt(55.753395, 37.625427, 0.0));
+        // Zurich Irchel Park: 47.397742, 8.545594, 488m
+        // Seattle downtown (15 deg declination): 47.592182, -122.316031, 86m
+        // Moscow downtown: 55.753395, 37.625427, 155m
+        LatLonAlt referencePos = new LatLonAlt(47.397742, 8.545594, 488.0);
+        world.setGlobalReference(referencePos);
 
         MAVLinkSchema schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
 
@@ -103,14 +108,19 @@ public class Simulator implements Runnable {
 
         // Create environment
         SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
-        Vector3d magField = new Vector3d(0.2f, 0.0f, 0.5f);
-        Matrix3d magDecl = new Matrix3d();
-        magDecl.rotZ(11.0 / 180.0 * Math.PI);
-        magDecl.transform(magField);
-        simpleEnvironment.setMagField(magField);
+        Vector3d magField = new Vector3d(0.21523, 0.0f, 0.42741);
+
         //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
         simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
+
+        // set declination based on current position
+        double decl = (world.getEnvironment().getMagDeclination(referencePos.lat / Math.PI * 180.0, referencePos.lon / Math.PI / 180.0) / 180.0) * Math.PI;
+
+        Matrix3d magDecl = new Matrix3d();
+        magDecl.rotZ(decl / 180.0 * Math.PI);
+        magDecl.transform(magField);
+        simpleEnvironment.setMagField(magField);
 
         // Create vehicle with sensors
         vehicle = buildMulticopter();
