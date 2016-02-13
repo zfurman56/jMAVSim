@@ -108,17 +108,23 @@ public class Simulator implements Runnable {
 
         // Create environment
         SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
+
+        // Mag vector in earth field, loosely based on the earth field in Zurich,
+        // but without declination. The declination will be added below based on
+        // the origin GPS position.
         Vector3d magField = new Vector3d(0.21523, 0.0f, 0.42741);
 
         //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
         simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
 
-        // set declination based on current position
-        double decl = (world.getEnvironment().getMagDeclination(referencePos.lat / Math.PI * 180.0, referencePos.lon / Math.PI / 180.0) / 180.0) * Math.PI;
+        // Set declination based on the initialization position of the Simulator
+        // getMagDeclination() is in degrees, GPS position is in radians and the result
+        // variable decl is back in radians.
+        double decl = (world.getEnvironment().getMagDeclination(referencePos.lat / Math.PI * 180.0, referencePos.lon / Math.PI * 180.0) / 180.0) * Math.PI;
 
         Matrix3d magDecl = new Matrix3d();
-        magDecl.rotZ(decl / 180.0 * Math.PI);
+        magDecl.rotZ(decl);
         magDecl.transform(magField);
         simpleEnvironment.setMagField(magField);
 
