@@ -27,6 +27,7 @@ public class Simulator implements Runnable {
     public static boolean USE_SERIAL_PORT = false;
     public static boolean COMMUNICATE_WITH_QGC = true;
     public static boolean SHOW_REPORT_PANEL = false;
+    public static final String DEFAULT_AUTOPILOT_TYPE = "generic";
     public static final int DEFAULT_AUTOPILOT_PORT = 14560;
     public static final int DEFAULT_QGC_BIND_PORT = 0;
     public static final int DEFAULT_QGC_PEER_PORT = 14550;
@@ -34,6 +35,7 @@ public class Simulator implements Runnable {
     public static final int DEFAULT_SERIAL_BAUD_RATE = 230400;
     public static final String LOCAL_HOST = "127.0.0.1";
 
+    private static String autopilotType = DEFAULT_AUTOPILOT_TYPE;
     private static String autopilotIpAddress = LOCAL_HOST;
     private static int autopilotPort = DEFAULT_AUTOPILOT_PORT;
     private static String qgcIpAddress = LOCAL_HOST;
@@ -153,7 +155,7 @@ public class Simulator implements Runnable {
         // Open ports
         autopilotMavLinkPort.open();
 
-        if (autopilotMavLinkPort instanceof SerialMAVLinkPort) {
+        if (autopilotType == "px4" && autopilotMavLinkPort instanceof SerialMAVLinkPort) {
             // Special handling for PX4: Start MAVLink instance
             SerialMAVLinkPort port = (SerialMAVLinkPort) autopilotMavLinkPort;
             port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
@@ -260,8 +262,9 @@ public class Simulator implements Runnable {
     public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port> <qgc bind port>";
     public final static String SERIAL_STRING = "-serial <path> <baudRate>";
     public final static String REP_STRING = "-rep";
+    public final static String AP_STRING = "-ap <autopilot_type>";
     public final static String CMD_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
-    public final static String USAGE_STRING = CMD_STRING + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] ["+ QGC_STRING + "] ["+ REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
+    public final static String USAGE_STRING = CMD_STRING + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + AP_STRING + "] [" + QGC_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
             throws InterruptedException, IOException, ParserConfigurationException, SAXException {
@@ -393,6 +396,13 @@ public class Simulator implements Runnable {
                 //     System.err.println("-qgc needs an argument: " + QGC_STRING);
                 //     return;
                 // }
+            } else if (arg.equals("-ap")) {
+                if (i < args.length) {
+                    autopilotType = args[i++];
+                } else {
+                    System.err.println("-ap requires the autopilot name as an argument.");
+                    return;
+                }
             } else if (arg.equals("-rep")) {
                 SHOW_REPORT_PANEL = true;
             } else {
