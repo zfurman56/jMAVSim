@@ -64,6 +64,14 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
     }
 
+    public void endSim() {
+        // Set HIL mode
+        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
+        msg.set("target_system", sysId);
+        msg.set("base_mode", 0);     // disarmed
+        sendMessage(msg);
+    }
+    
     @Override
     public void update(long t) {
         super.update(t);
@@ -112,7 +120,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
     }
 
-    private void initMavLink() {
+    public void initMavLink() {
         // Set HIL mode
         MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
         msg.set("target_system", sysId);

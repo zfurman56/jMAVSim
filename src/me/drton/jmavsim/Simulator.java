@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;;
 
 /**
  * User: ton Date: 26.11.13 Time: 12:33
@@ -53,10 +54,10 @@ public class Simulator implements Runnable {
     CameraGimbal2D gimbal;
 
     private World world;
-    private int sleepInterval = 2;  // Main loop interval, in ms
-    private int simDelayMax = 10;  // Max delay between simulated and real time to skip samples in simulator, in ms
+    private int sleepInterval = 2000;  // Main loop interval, in us
+//    private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private boolean shutdown = false;
+    public volatile boolean shutdown = false;
 
     public Simulator() throws IOException, InterruptedException, ParserConfigurationException, SAXException {
         // Create world
@@ -104,6 +105,9 @@ public class Simulator implements Runnable {
         //udpGCMavLinkPort.setDebug(true);
         if (COMMUNICATE_WITH_QGC) {
             udpGCMavLinkPort.setup(qgcBindPort, qgcIpAddress, qgcPeerPort);
+            //udpGCMavLinkPort.setDebug(true);
+            if (monitorMessage && USE_SERIAL_PORT)
+                udpGCMavLinkPort.setMonitorMessageID(monitorMessageIds);
             connCommon.addNode(udpGCMavLinkPort);
         }
 
@@ -169,35 +173,50 @@ public class Simulator implements Runnable {
             BufferedReader bufferedReader = new BufferedReader(fileInputStream);
             @Override
             public void run() {
-
                 try {
                     // get user input as a String
-                    String input = "";
                     if (bufferedReader.ready()) {
-                        input = bufferedReader.readLine();
+                        String input = bufferedReader.readLine();
+                        if (input.equals("f"))
+                            setFPV();
+                        else if (input.equals("g"))
+                            setGimbal();
+                        else if (input.equals("s"))
+                            setStaticCamera();
+                        else if (input.equals("x"))
+                            shutdown = true;
+                        else if (input.equals("i"))
+                            hilSystem.initMavLink();
+                        else if (input.equals("q"))
+                            hilSystem.endSim();
+                        else if (input.equals("r"))
+                            visualizer.toggleReportPanel();
                     }
-                    if(input.equals("f")) {
-                        setFPV();
-                    } else if (input.equals("g")) {
-                        setGimbal();
-                    } else if (input.equals("s")) {
-                        setStaticCamera();
-                    } else if (input.equals("r"))
-                        visualizer.toggleReportPanel();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         };
 
-        executor.scheduleAtFixedRate(keyboardWatcher, 0, 1, TimeUnit.MILLISECONDS);
-        executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MILLISECONDS);
+        final ScheduledFuture<?> thisHandle = executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MICROSECONDS);
+        final ScheduledFuture<?> kwHandle = executor.scheduleAtFixedRate(keyboardWatcher, 0, 1, TimeUnit.MILLISECONDS);
 
-        while(!shutdown) Thread.sleep(1000);
+        while(true) { 
+            Thread.sleep(100);
+        
+            if (shutdown)
+                break;
+        }
 
+        System.out.println("Shutdown.");
+        hilSystem.endSim();
         // Close ports
         autopilotMavLinkPort.close();
         udpGCMavLinkPort.close();
+        kwHandle.cancel(true);
+        thisHandle.cancel(true);
+        executor.shutdown();
+        System.exit(0);
     }
 
     private AbstractMulticopter buildMulticopter() throws IOException {
@@ -229,18 +248,18 @@ public class Simulator implements Runnable {
         return gimbal;
     }
 
-    private void setFPV() {
+    public void setFPV() {
         // Put camera on vehicle (FPV)
         visualizer.setViewerPositionObject(vehicle);
         visualizer.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
     }
 
-    private void setGimbal() {
+    public void setGimbal() {
         visualizer.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
         visualizer.setViewerPositionObject(gimbal);
     }
 
-    private void setStaticCamera() {
+    public void setStaticCamera() {
         // Put camera on static point and point to vehicle
         visualizer.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
         visualizer.setViewerTargetObject(vehicle);
@@ -257,10 +276,10 @@ public class Simulator implements Runnable {
         }
     }
 
-    public final static String PRINT_INDICATION_STRING = "-m <comma-separated list of mavlink message IDs to monitor. If none are listed, all messages will be monitored.>";
-    public final static String UDP_STRING = "-udp <autopilot ip address>:<autopilot port>";
-    public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port> <qgc bind port>";
-    public final static String SERIAL_STRING = "-serial <path> <baudRate>";
+    public final static String PRINT_INDICATION_STRING = "-m [<MsgID[, MsgID]...>]";
+    public final static String UDP_STRING = "-udp <mav ip>:<mav port>";
+    public final static String QGC_STRING = "-qgc"; // <qgc ip address>:<qgc peer port> <qgc bind port>
+    public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
     public final static String REP_STRING = "-rep";
     public final static String AP_STRING = "-ap <autopilot_type>";
     public final static String CMD_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
@@ -292,14 +311,16 @@ public class Simulator implements Runnable {
                     try {
                         if (nextArg.startsWith("-")) {
                             // if user ONLY passes in -m, monitor all messages.
+                            i--;
                             continue;
                         }
-                        if (!nextArg.contains(",")) {
+                        if (nextArg.contains(",")) {
+                            String split[] = nextArg.split(",");
+                            for (String s : split) {
+                                monitorMessageIds.add(Integer.parseInt(s));
+                            }
+                        } else {
                             monitorMessageIds.add(Integer.parseInt(nextArg));
-                        }
-                        String split[] = nextArg.split(",");
-                        for (String s : split) {
-                            monitorMessageIds.add(Integer.parseInt(s));
                         }
                     } catch (NumberFormatException e) {
                         System.err.println("Expected: " + PRINT_INDICATION_STRING + ", got: " + Arrays.toString(args));
@@ -342,13 +363,18 @@ public class Simulator implements Runnable {
                 }
             } else if (arg.equals("-serial")) {
                 USE_SERIAL_PORT = true;
-                if (i == args.length) {
+                if (i >= args.length) {
                     // only arg is -serial, so use default values
                     break;
                 }
-                if ( (i+2) <= args.length) {
+                String nextArg = args[i++];
+                if (nextArg.startsWith("-")) {
+                    i--;
+                    continue;
+                }
+                if ( (i+1) <= args.length) {
                     try {
-                        serialPath = args[i++];
+                        serialPath = nextArg;
                         serialBaudRate = Integer.parseInt(args[i++]);
                     } catch (NumberFormatException e) {
                         System.err.println("Expected: " + USAGE_STRING + ", got: " + e.toString());
@@ -414,14 +440,37 @@ public class Simulator implements Runnable {
         if (i != args.length) {
             System.err.println("Usage: " + USAGE_STRING);
             return;
-        } else { System.out.println("Options parsed, starting Sim."); }
+        } else { System.out.println("Options parsed, starting Sim.  Press x<ENTER> to exit."); }
 
         new Simulator();
     }
 
     private static void handleHelpFlag() {
-        System.out.println("Usage: " + USAGE_STRING);
-        System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
+        System.out.println("\nUsage: " + USAGE_STRING + "\n");
+        System.out.println("Command-line options:\n");
+        System.out.println(UDP_STRING);
+        System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress + ":" + autopilotPort + ").\n");
+        System.out.println(SERIAL_STRING);
+        System.out.println("      Open a serial connection to the MAV (default: " + serialPath + " @ " + serialBaudRate + ").\n");
+        System.out.println(AP_STRING);
+        System.out.println("      Specify a specific MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
+        System.out.println(QGC_STRING);
+        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "\n");
+        System.out.println(REP_STRING);
+        System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).\n");
+        System.out.println(PRINT_INDICATION_STRING);
+        System.out.println("      Monitor (echo) all/selected MAVLink messages to the console. If no MsgIDs are specified, all messages are monitored.\n");
+        System.out.println("Key commands (in the console, press the key and then <ENTER>):");
+        System.out.println(" Views:");
+        System.out.println("   f - First-person camera.");
+        System.out.println("   s - Stationary camera.");
+        System.out.println("   g - Gimbal camera.");
+        System.out.println(" Other:");
+        System.out.println("   q - Disable sim on MAV.");
+        System.out.println("   i - Enable sim on MAV.");
+        System.out.println("   r - Show/hide data reports in visualizer window.");
+        System.out.println("   x - Exit jMAVSim.");
+        //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
     }
 
 }
