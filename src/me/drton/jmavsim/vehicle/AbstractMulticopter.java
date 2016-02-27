@@ -1,5 +1,7 @@
 package me.drton.jmavsim.vehicle;
 
+import me.drton.jmavsim.ReportUtil;
+import me.drton.jmavsim.ReportingObject;
 import me.drton.jmavsim.Rotor;
 import me.drton.jmavsim.World;
 
@@ -10,7 +12,7 @@ import java.io.FileNotFoundException;
  * Abstract multicopter class. Does all necessary calculations for multirotor with any placement of rotors.
  * Only rotors on one plane supported now.
  */
-public abstract class AbstractMulticopter extends AbstractVehicle {
+public abstract class AbstractMulticopter extends AbstractVehicle implements ReportingObject {
     private double dragMove = 0.0;
     private double dragRotate = 0.0;
     protected Rotor[] rotors;
@@ -21,6 +23,77 @@ public abstract class AbstractMulticopter extends AbstractVehicle {
         for (int i = 0; i < getRotorsNum(); i++) {
             rotors[i] = new Rotor();
         }
+    }
+
+    public void report(StringBuilder builder) {
+        builder.append("MULTICOPTER");
+        builder.append(newLine);
+        builder.append("===========");
+        builder.append(newLine);
+        builder.append(newLine);
+
+        builder.append("CONTROLS");
+        builder.append(newLine);
+        builder.append("--------");
+        builder.append(newLine);
+
+        if (getControl().size() > 0) {
+            for (int i = 0; i < getControl().size(); i++) {
+                builder.append(Double.toString(getControl().get(i)));
+                builder.append(newLine);
+            }
+        } else {
+            builder.append("n/a");
+            builder.append(newLine);
+        }
+
+        builder.append(newLine);
+
+        for (int i = 0; i < getRotorsNum(); i++) {
+            reportRotor(builder, i);
+        }
+
+        builder.append(ReportingObject.newLine);
+        builder.append(ReportingObject.newLine);
+    }
+
+    private void reportRotor(StringBuilder builder, int rotorIndex) {
+        Rotor rotor = rotors[rotorIndex];
+
+        builder.append("ROTOR #");
+        builder.append(rotorIndex);
+        builder.append(newLine);
+        builder.append("--------");
+        builder.append(newLine);
+
+        builder.append("Control: ");
+        builder.append(rotor.getControl());
+        builder.append(newLine);
+
+        builder.append("Thrust: ");
+        builder.append(rotor.getThrust());
+        builder.append(" / ");
+        builder.append(rotor.getFullThrust());
+        builder.append(" [N]");
+        builder.append(newLine);
+
+        builder.append("Torque: ");
+        builder.append(rotor.getThrust());
+        builder.append(" / ");
+        builder.append(rotor.getFullTorque());
+        builder.append(" [N * m]");
+        builder.append(newLine);
+
+        builder.append("Spin up: ");
+        builder.append(rotor.getTimeConstant());
+        builder.append(" [s]");
+        builder.append(newLine);
+
+        builder.append("Position: ");
+        builder.append(ReportUtil.toShortString(getRotorPosition(rotorIndex)));
+        builder.append(newLine);
+
+        builder.append(newLine);
     }
 
     /**

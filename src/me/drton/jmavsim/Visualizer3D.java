@@ -24,6 +24,7 @@ public class Visualizer3D extends JFrame {
     private TransformGroup viewerTransformGroup;
     private KinematicObject viewerTargetObject;
     private KinematicObject viewerPositionObject;
+    private ReportPanel reportPanel;
 
     public Visualizer3D(World world) {
         this.world = world;
@@ -33,6 +34,9 @@ public class Visualizer3D extends JFrame {
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
         Canvas3D canvas = new Canvas3D(gc);
         getContentPane().add(canvas);
+
+        reportPanel = new ReportPanel();
+        add(reportPanel, "West");
 
         universe = new SimpleUniverse(canvas);
         universe.getViewer().getView().setBackClipDistance(100000.0);
@@ -94,6 +98,15 @@ public class Visualizer3D extends JFrame {
      */
     public void setViewerPositionOffset(Vector3d offset) {
         this.viewerPositionOffset = offset;
+    }
+
+    /**
+     * Sets the text of the simulation report.
+     *
+     * @param text
+     */
+    public void setReportText(String text) {
+        this.reportPanel.setText(text);
     }
 
     private void createEnvironment() {
