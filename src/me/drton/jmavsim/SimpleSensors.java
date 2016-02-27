@@ -26,6 +26,31 @@ public class SimpleSensors implements Sensors {
         globalProjector.init(object.getWorld().getGlobalReference());
     }
 
+    public double randomNoise(double stdDev) {
+        double x0;
+        double b0, b1;
+
+        do {
+            b0 = Math.random();
+            b1 = Math.random();
+        } while (b0 <= Float.intBitsToFloat(0x1));
+
+        x0 = java.lang.Math.sqrt(-2.0 * java.lang.Math.log(b0)) * java.lang.Math.cos(Math.PI * 2.0 * b1);
+
+        if (java.lang.Double.isInfinite(x0) || java.lang.Double.isNaN(x0)) {
+            x0 = 0.0;
+        }
+
+        return x0 * (stdDev * stdDev);
+    }
+
+    public Vector3d addZeroMeanNoise(Vector3d vIn, double stdDev) {
+
+        return new Vector3d(vIn.x + randomNoise(stdDev),
+                            vIn.y + randomNoise(stdDev),
+                            vIn.z + randomNoise(stdDev));
+    }
+
     public void setGPSStartTime(long time) {
         gpsStartTime = time;
     }
@@ -49,12 +74,13 @@ public class SimpleSensors implements Sensors {
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(accBody);
+        accBody = addZeroMeanNoise(accBody, 0.05);
         return accBody;
     }
 
     @Override
     public Vector3d getGyro() {
-        return object.getRotationRate();
+        return addZeroMeanNoise(object.getRotationRate(), 0.01);
     }
 
     @Override
@@ -63,7 +89,7 @@ public class SimpleSensors implements Sensors {
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(mag);
-        return mag;
+        return addZeroMeanNoise(mag, 0.005);
     }
 
     @Override
