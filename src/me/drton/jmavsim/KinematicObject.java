@@ -8,7 +8,10 @@ import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
+
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Abstract kinematic object class.
@@ -44,8 +47,15 @@ public abstract class KinematicObject extends WorldObject {
      * @throws java.io.FileNotFoundException
      */
     protected void modelFromFile(String modelFile) throws FileNotFoundException {
+	URL file = null;
+	try {
+	    file = new URL("file:./" + modelFile);
+	} catch (MalformedURLException e) {
+	    System.err.println(e);
+	    System.exit(1);
+	}
         ObjectFile objectFile = new ObjectFile();
-        Scene scene = objectFile.load(modelFile);
+        Scene scene = objectFile.load(file);
         transformGroup.addChild(scene.getSceneGroup());
     }
 
