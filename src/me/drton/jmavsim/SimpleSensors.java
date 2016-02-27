@@ -118,8 +118,8 @@ public class SimpleSensors implements Sensors {
             GNSSReport gpsCurrent = new GNSSReport();
             Vector3d pos = object.getPosition();
             gpsCurrent.position = globalProjector.reproject(new double[]{pos.x, pos.y, pos.z});
-            gpsCurrent.eph = 1.0;
-            gpsCurrent.epv = 1.0;
+            gpsCurrent.eph = 0.4;
+            gpsCurrent.epv = 0.5;
             gpsCurrent.velocity = new Vector3d(object.getVelocity());
             gpsCurrent.fix = 3;
             gpsCurrent.time = System.currentTimeMillis() * 1000;
