@@ -17,7 +17,7 @@ public class Visualizer3D extends JFrame {
     private static Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
     private final World world;
     private SimpleUniverse universe;
-    private BoundingSphere sceneBounds = new BoundingSphere(new Point3d(0, 0, 0), 100000.0);
+    private BoundingSphere sceneBounds = new BoundingSphere(new Point3d(0, 0, 0), 1000000.0);
     private Vector3d viewerPosition = new Vector3d(0.0, 0.0, 0.0);
     private Vector3d viewerPositionOffset = new Vector3d(0.0, 0.0, 0.0);
     private Transform3D viewerTransform = new Transform3D();
@@ -29,8 +29,8 @@ public class Visualizer3D extends JFrame {
     public Visualizer3D(World world) {
         this.world = world;
 
-        setSize(640, 480);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(800, 600);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);  // HIDE_ON_CLOSE
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
         Canvas3D canvas = new Canvas3D(gc);
         getContentPane().add(canvas);
@@ -39,6 +39,7 @@ public class Visualizer3D extends JFrame {
         universe.getViewer().getView().setBackClipDistance(100000.0);
         viewerTransformGroup = universe.getViewingPlatform().getViewPlatformTransform();
         createEnvironment();
+        
         for (WorldObject object : world.getObjects()) {
             if (object instanceof KinematicObject) {
                 BranchGroup bg = ((KinematicObject) object).getBranchGroup();
