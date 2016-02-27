@@ -86,6 +86,10 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
         this.wind = wind;
     }
 
+    public void setWindDeviation(double deviation) {
+        this.windDeviation = deviation;
+    }
+
     @Override
     public double getGroundLevel(Vector3d point) {
         return groundLevel;
