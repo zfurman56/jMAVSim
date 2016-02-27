@@ -34,10 +34,7 @@ public class Visualizer3D extends JFrame {
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
         Canvas3D canvas = new Canvas3D(gc);
         getContentPane().add(canvas);
-
-        reportPanel = new ReportPanel();
-        add(reportPanel, "West");
-
+        
         universe = new SimpleUniverse(canvas);
         universe.getViewer().getView().setBackClipDistance(100000.0);
         viewerTransformGroup = universe.getViewingPlatform().getViewPlatformTransform();
@@ -106,7 +103,28 @@ public class Visualizer3D extends JFrame {
      * @param text
      */
     public void setReportText(String text) {
-        this.reportPanel.setText(text);
+    	if (this.reportPanel != null)
+    	    this.reportPanel.setText(text);
+    }
+
+    /**
+     * Show/hide the simulation report.
+     *
+     * @param text
+     */
+    public void toggleReportPanel(boolean on) {
+    	if (on && this.reportPanel == null) {
+    	    this.reportPanel = new ReportPanel();
+                add(this.reportPanel, "West");
+    	} else if (!on && this.reportPanel != null) {
+    	    remove(this.reportPanel);
+    	    this.reportPanel = null;
+    	}
+    	revalidate();
+    }
+    
+    public void toggleReportPanel() {
+        this.toggleReportPanel(this.reportPanel == null);
     }
 
     private void createEnvironment() {

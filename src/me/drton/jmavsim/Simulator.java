@@ -26,6 +26,7 @@ public class Simulator implements Runnable {
 
     public static boolean USE_SERIAL_PORT = false;
     public static boolean COMMUNICATE_WITH_QGC = true;
+    public static boolean SHOW_REPORT_PANEL = false;
     public static final int DEFAULT_AUTOPILOT_PORT = 14560;
     public static final int DEFAULT_QGC_BIND_PORT = 0;
     public static final int DEFAULT_QGC_PEER_PORT = 14550;
@@ -135,17 +136,19 @@ public class Simulator implements Runnable {
         connHIL.addNode(hilSystem);
         world.addObject(vehicle);
 
+        // Put camera on vehicle with gimbal
+        gimbal = buildGimbal();
+        world.addObject(gimbal);
+
         // Create 3D visualizer
         visualizer = new Visualizer3D(world);
 
+        // default camera view
         setFPV();
 
         // Create simulation report updater
         world.addObject(new ReportUpdater(world, visualizer));
-
-        // Put camera on vehicle with gimbal
-        gimbal = buildGimbal();
-        world.addObject(gimbal);
+        visualizer.toggleReportPanel(SHOW_REPORT_PANEL);
 
         // Open ports
         autopilotMavLinkPort.open();
@@ -156,10 +159,8 @@ public class Simulator implements Runnable {
             port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
         }
 
-        if (COMMUNICATE_WITH_QGC) {
+        if (COMMUNICATE_WITH_QGC)
             udpGCMavLinkPort.open();
-        }
-
 
         keyboardWatcher = new Runnable() {
             InputStreamReader fileInputStream = new InputStreamReader(System.in);
@@ -179,7 +180,8 @@ public class Simulator implements Runnable {
                         setGimbal();
                     } else if (input.equals("s")) {
                         setStaticCamera();
-                    }
+                    } else if (input.equals("r"))
+                        visualizer.toggleReportPanel();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -257,8 +259,9 @@ public class Simulator implements Runnable {
     public final static String UDP_STRING = "-udp <autopilot ip address>:<autopilot port>";
     public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port> <qgc bind port>";
     public final static String SERIAL_STRING = "-serial <path> <baudRate>";
-    public final static String USAGE_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator " +
-            "[" + UDP_STRING + " | " + SERIAL_STRING + "] "+ QGC_STRING + " " + PRINT_INDICATION_STRING;
+    public final static String REP_STRING = "-rep";
+    public final static String CMD_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
+    public final static String USAGE_STRING = CMD_STRING + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] ["+ QGC_STRING + "] ["+ REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
             throws InterruptedException, IOException, ParserConfigurationException, SAXException {
@@ -275,7 +278,7 @@ public class Simulator implements Runnable {
         int i = 0;
         while (i < args.length) {
             String arg = args[i++];
-            if (arg.equalsIgnoreCase("--help")) {
+            if (arg.equalsIgnoreCase("-h") || arg.equalsIgnoreCase("--help")) {
                 handleHelpFlag();
                 return;
             }
@@ -390,6 +393,8 @@ public class Simulator implements Runnable {
                 //     System.err.println("-qgc needs an argument: " + QGC_STRING);
                 //     return;
                 // }
+            } else if (arg.equals("-rep")) {
+                SHOW_REPORT_PANEL = true;
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
@@ -399,7 +404,7 @@ public class Simulator implements Runnable {
         if (i != args.length) {
             System.err.println("Usage: " + USAGE_STRING);
             return;
-        } else { System.out.println("Success!"); }
+        } else { System.out.println("Options parsed, starting Sim."); }
 
         new Simulator();
     }
