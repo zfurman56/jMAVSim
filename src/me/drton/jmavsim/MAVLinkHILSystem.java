@@ -95,6 +95,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         msg_sensor.set("ymag", mag.y);
         msg_sensor.set("zmag", mag.z);
         msg_sensor.set("pressure_alt", sensors.getPressureAlt());
+        msg_sensor.set("abs_pressure", 1013.25 - (sensors.getPressureAlt() / 7.603437)); // primitive conversion of altitude meters to millibars
         sendMessage(msg_sensor);
 
         // GPS
