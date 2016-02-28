@@ -176,7 +176,7 @@ public class Visualizer3D extends JFrame {
         DirectionalLight light1 = new DirectionalLight(white, new Vector3f(4.0f, 7.0f, 12.0f));
         light1.setInfluencingBounds(sceneBounds);
         group.addChild(light1);
-        AmbientLight light2 = new AmbientLight(new Color3f(0.5f, 0.5f, 0.5f));
+        AmbientLight light2 = new AmbientLight(new Color3f(0.9f, 0.9f, 0.9f));
         light2.setInfluencingBounds(sceneBounds);
         group.addChild(light2);
 
