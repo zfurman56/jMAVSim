@@ -16,6 +16,8 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
     private Vector3d windCurrent = new Vector3d(0.0, 0.0, 0.0);
     private Random random = new Random();
     private long lastTime = 0;
+    private Float magIncl = 0.0f;
+    private Float magDecl = 0.0f;
 
         /** set this always to the sampling in degrees for the table below */
     private int SAMPLING_RES      = 10;
@@ -56,6 +58,9 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
         builder.append(newLine);
 
         builder.append(newLine);
+        builder.append(String.format("Mag. Incl: %.5f;\n     Decl: %.5f", magIncl, magDecl));
+
+        builder.append(newLine);
         builder.append(newLine);
     }
 
@@ -75,6 +80,8 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
 
     public void setMagField(Vector3d magField) {
         this.magField = magField;
+        this.magIncl = (float)Math.toDegrees(Math.atan2(magField.z, magField.x));
+        this.magDecl = (float)Math.toDegrees(Math.atan2(magField.y, magField.x));
     }
 
     @Override

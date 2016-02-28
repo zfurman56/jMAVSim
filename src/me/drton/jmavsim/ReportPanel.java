@@ -13,6 +13,7 @@ public class ReportPanel extends Panel {
 
         textArea = new TextArea("", 0, 0, TextArea.SCROLLBARS_VERTICAL_ONLY);
         textArea.setEditable(false);
+        setIsFocusable(false);
         textArea.setFont(new Font("monospaced", Font.PLAIN, 12));
         textArea.setPreferredSize(new Dimension(300, 0));
 
@@ -21,5 +22,9 @@ public class ReportPanel extends Panel {
 
     public void setText(String report) {
         textArea.setText(report);
+    }
+    
+    public void setIsFocusable(boolean on) {
+        textArea.setFocusable(on);
     }
 }

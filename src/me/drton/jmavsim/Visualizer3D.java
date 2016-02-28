@@ -20,6 +20,7 @@ public class Visualizer3D extends JFrame {
     
     private static Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
     private final World world;
+    private boolean reportPaused = false;
     private SimpleUniverse universe;
     private BoundingSphere sceneBounds = new BoundingSphere(new Point3d(0, 0, 0), 1000000.0);
     private Vector3d viewerPosition = new Vector3d(0.0, 0.0, 0.0);
@@ -32,6 +33,7 @@ public class Visualizer3D extends JFrame {
     private KinematicObject gimbalViewObject;
     private ReportPanel reportPanel;
     private MAVLinkHILSystem hilSystem;
+    private KeyboardHandler keyHandler;
 
     public Visualizer3D(World world) {
         this.world = world;
@@ -40,10 +42,12 @@ public class Visualizer3D extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);  // HIDE_ON_CLOSE
         setTitle("jMAVSim");
         
+        keyHandler = new KeyboardHandler();
+        
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
         Canvas3D canvas = new Canvas3D(gc);
         canvas.setFocusable(true);
-        canvas.addKeyListener(new KeyboardHandler());
+        canvas.addKeyListener(keyHandler);
         getContentPane().add(canvas);
         
         universe = new SimpleUniverse(canvas);
@@ -142,7 +146,7 @@ public class Visualizer3D extends JFrame {
      * @param text
      */
     public void setReportText(String text) {
-    	if (this.reportPanel != null)
+    	if (this.reportPanel != null && !reportPaused)
     	    this.reportPanel.setText(text);
     }
 
@@ -152,18 +156,30 @@ public class Visualizer3D extends JFrame {
      * @param text
      */
     public void toggleReportPanel(boolean on) {
-    	if (on && this.reportPanel == null) {
-    	    this.reportPanel = new ReportPanel();
-                add(this.reportPanel, "West");
-    	} else if (!on && this.reportPanel != null) {
-    	    remove(this.reportPanel);
-    	    this.reportPanel = null;
-    	}
-    	revalidate();
+        if (on && this.reportPanel == null) {
+            this.reportPanel = new ReportPanel();
+            this.reportPanel.setFocusable(false);
+            reportPaused = false;
+            add(this.reportPanel, "West");
+        } else if (!on && this.reportPanel != null) {
+            remove(this.reportPanel);
+            this.reportPanel = null;
+        }
+        revalidate();
     }
     
     public void toggleReportPanel() {
         this.toggleReportPanel(this.reportPanel == null);
+    }
+
+    /**
+     * Toggles updates of the report panel text.
+     *
+     * @param pause
+     */
+    public void setReportPaused(boolean pause) {
+        reportPaused = pause;
+        reportPanel.setIsFocusable(pause);
     }
 
     private void createEnvironment() {
@@ -348,6 +364,10 @@ public class Visualizer3D extends JFrame {
                 
             case KeyEvent.VK_R :
                 toggleReportPanel();
+                break;
+
+            case KeyEvent.VK_T :
+                setReportPaused(!reportPaused);
                 break;
 
             case KeyEvent.VK_I :

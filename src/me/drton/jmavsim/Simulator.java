@@ -577,6 +577,7 @@ public class Simulator implements Runnable {
         System.out.println("   Q - Disable sim on MAV.");
         System.out.println("   I - Enable sim on MAV.");
         System.out.println("   R - Show/hide data reports.");
+        System.out.println("   T - Pause/resume data report updates.");
         System.out.println("  ESC - Exit jMAVSim.");
         System.out.println("");
         //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
