@@ -232,8 +232,8 @@ public class Simulator implements Runnable {
 
     private AbstractMulticopter buildMulticopter() throws IOException {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", 0.33 / 2, 4.0,
-                0.05, 0.005, gc);
+        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", "default", 
+                                                        0.33 / 2, 4.0, 0.05, 0.005, gc);
         vehicle.setMass(0.8);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
