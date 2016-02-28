@@ -63,6 +63,7 @@ public class Simulator implements Runnable {
     Visualizer3D visualizer;
     AbstractMulticopter vehicle;
     CameraGimbal2D gimbal;
+    MAVLinkHILSystem hilSystem;
 
     private World world;
 //    private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
@@ -149,7 +150,7 @@ public class Simulator implements Runnable {
 
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
-        MAVLinkHILSystem hilSystem = new MAVLinkHILSystem(schema, autopilotSysId, 51, vehicle);
+        hilSystem = new MAVLinkHILSystem(schema, autopilotSysId, 51, vehicle);
         connHIL.addNode(hilSystem);
         world.addObject(vehicle);
 
