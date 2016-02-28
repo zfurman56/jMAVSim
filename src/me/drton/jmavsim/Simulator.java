@@ -28,14 +28,23 @@ public class Simulator implements Runnable {
     public static boolean USE_SERIAL_PORT = false;
     public static boolean COMMUNICATE_WITH_QGC = true;
     public static boolean SHOW_REPORT_PANEL = false;
-    public static final String DEFAULT_AUTOPILOT_TYPE = "generic";
-    public static final int DEFAULT_AUTOPILOT_PORT = 14560;
-    public static final int DEFAULT_QGC_BIND_PORT = 0;
-    public static final int DEFAULT_QGC_PEER_PORT = 14550;
+    
+    public static final int    DEFAULT_SIM_SPEED = 500; // Hz
+    public static final String DEFAULT_AUTOPILOT_TYPE = "generic";  // eg. "px4" or "aq"
+    public static final int    DEFAULT_AUTOPILOT_PORT = 14560;
+    public static final int    DEFAULT_QGC_BIND_PORT = 0;
+    public static final int    DEFAULT_QGC_PEER_PORT = 14550;
     public static final String DEFAULT_SERIAL_PATH = "/dev/tty.usbmodem1";
-    public static final int DEFAULT_SERIAL_BAUD_RATE = 230400;
+    public static final int    DEFAULT_SERIAL_BAUD_RATE = 230400;
     public static final String LOCAL_HOST = "127.0.0.1";
 
+    public static final int    DEFAULT_CAM_PITCH_CHAN =  4;    // Control gimbal pitch from autopilot, -1 to disable
+    public static final int    DEFAULT_CAM_ROLL_CHAN  = -1;    // Control gimbal roll from autopilot, -1 to disable
+    public static final Double DEFAULT_CAM_PITCH_SCAL = 1.57;  // channel value to physical movement (+/-90 deg)
+    public static final Double DEFAULT_CAM_ROLL_SCAL  = 1.57;  // channel value to physical movement (+/-90 deg)
+
+    
+    private static int sleepInterval = (int)1e6 / DEFAULT_SIM_SPEED;  // Main loop interval, in us
     private static String autopilotType = DEFAULT_AUTOPILOT_TYPE;
     private static String autopilotIpAddress = LOCAL_HOST;
     private static int autopilotPort = DEFAULT_AUTOPILOT_PORT;
@@ -54,7 +63,6 @@ public class Simulator implements Runnable {
     CameraGimbal2D gimbal;
 
     private World world;
-    private int sleepInterval = 2000;  // Main loop interval, in us
 //    private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     public volatile boolean shutdown = false;
@@ -120,6 +128,7 @@ public class Simulator implements Runnable {
         Vector3d magField = new Vector3d(0.21523, 0.0f, 0.42741);
 
         //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
+        //simpleEnvironment.setWindDeviation(0.0);
         simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
 
@@ -143,8 +152,10 @@ public class Simulator implements Runnable {
         world.addObject(vehicle);
 
         // Put camera on vehicle with gimbal
-        gimbal = buildGimbal();
-        world.addObject(gimbal);
+        if (DEFAULT_CAM_PITCH_CHAN > -1 || DEFAULT_CAM_ROLL_CHAN > -1) {
+            gimbal = buildGimbal();
+            world.addObject(gimbal);
+        }
 
         // Create 3D visualizer
         visualizer = new Visualizer3D(world);
@@ -243,8 +254,10 @@ public class Simulator implements Runnable {
     private CameraGimbal2D buildGimbal() {
         gimbal = new CameraGimbal2D(world);
         gimbal.setBaseObject(vehicle);
-        gimbal.setPitchChannel(4);  // Control gimbal from autopilot
-        gimbal.setPitchScale(1.57); // +/- 90deg
+        gimbal.setPitchChannel(DEFAULT_CAM_PITCH_CHAN);
+        gimbal.setPitchScale(DEFAULT_CAM_PITCH_SCAL); 
+        gimbal.setRollChannel(DEFAULT_CAM_ROLL_CHAN);
+        gimbal.setRollScale(DEFAULT_CAM_ROLL_SCAL);
         return gimbal;
     }
 
@@ -282,8 +295,11 @@ public class Simulator implements Runnable {
     public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
     public final static String REP_STRING = "-rep";
     public final static String AP_STRING = "-ap <autopilot_type>";
+    public final static String SPEED_STRING = "-r <Hz>";
     public final static String CMD_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
-    public final static String USAGE_STRING = CMD_STRING + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + AP_STRING + "] [" + QGC_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
+    public final static String CMD_STRING_JAR = "java -jar jmavsim_run.jar";
+    public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] " + 
+                                              "[" + QGC_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
             throws InterruptedException, IOException, ParserConfigurationException, SAXException {
@@ -429,6 +445,20 @@ public class Simulator implements Runnable {
                     System.err.println("-ap requires the autopilot name as an argument.");
                     return;
                 }
+            } else if (arg.equals("-r")) {
+                if (i < args.length) {
+                    int t;
+                    try {
+                        t = Integer.parseInt(args[i++]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Expected numeric argument after -r: " + SPEED_STRING);
+                        return;
+                    }
+                    sleepInterval = (int)1e6 / t;
+                } else {
+                    System.err.println("-r requires Hz as an argument.");
+                    return;
+                }
             } else if (arg.equals("-rep")) {
                 SHOW_REPORT_PANEL = true;
             } else {
@@ -452,6 +482,9 @@ public class Simulator implements Runnable {
         System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress + ":" + autopilotPort + ").\n");
         System.out.println(SERIAL_STRING);
         System.out.println("      Open a serial connection to the MAV (default: " + serialPath + " @ " + serialBaudRate + ").\n");
+        System.out.println(SPEED_STRING);
+        System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency of the HIL_SENSOR messages.");
+        System.out.println("      Default is " + DEFAULT_SIM_SPEED + " Hz\n");
         System.out.println(AP_STRING);
         System.out.println("      Specify a specific MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
         System.out.println(QGC_STRING);
@@ -459,7 +492,8 @@ public class Simulator implements Runnable {
         System.out.println(REP_STRING);
         System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).\n");
         System.out.println(PRINT_INDICATION_STRING);
-        System.out.println("      Monitor (echo) all/selected MAVLink messages to the console. If no MsgIDs are specified, all messages are monitored.\n");
+        System.out.println("      Monitor (echo) all/selected MAVLink messages to the console.");
+        System.out.println("      If no MsgIDs are specified, all messages are monitored.\n");
         System.out.println("Key commands (in the console, press the key and then <ENTER>):");
         System.out.println(" Views:");
         System.out.println("   f - First-person camera.");
