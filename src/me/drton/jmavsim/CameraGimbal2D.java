@@ -3,7 +3,6 @@ package me.drton.jmavsim;
 import me.drton.jmavsim.vehicle.AbstractVehicle;
 
 import javax.vecmath.Matrix3d;
-import javax.vecmath.Vector3d;
 import java.util.List;
 
 /**

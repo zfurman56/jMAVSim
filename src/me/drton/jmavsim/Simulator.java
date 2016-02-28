@@ -10,9 +10,7 @@ import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 import java.lang.Math;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,7 +42,6 @@ public class Simulator implements Runnable {
     public static final Double DEFAULT_CAM_PITCH_SCAL = 1.57;  // channel value to physical movement (+/-90 deg)
     public static final Double DEFAULT_CAM_ROLL_SCAL  = 1.57;  // channel value to physical movement (+/-90 deg)
 
-    
     private static int sleepInterval = (int)1e6 / DEFAULT_SIM_SPEED;  // Main loop interval, in us
     private static int autopilotSysId = DEFAULT_AUTOPILOT_SYSID;
     private static String autopilotType = DEFAULT_AUTOPILOT_TYPE;
@@ -59,11 +56,13 @@ public class Simulator implements Runnable {
     private static HashSet<Integer> monitorMessageIds = new HashSet<Integer>();
     private static boolean monitorMessage = false;
 
-    Runnable keyboardWatcher;
     Visualizer3D visualizer;
     AbstractMulticopter vehicle;
     CameraGimbal2D gimbal;
     MAVLinkHILSystem hilSystem;
+    MAVLinkPort autopilotMavLinkPort;
+    UDPMavLinkPort udpGCMavLinkPort;
+    ScheduledFuture<?> thisHandle;
 
     private World world;
 //    private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
@@ -93,7 +92,6 @@ public class Simulator implements Runnable {
         world.addObject(connCommon);
 
         // Create ports
-        MAVLinkPort autopilotMavLinkPort;
         if (USE_SERIAL_PORT) {
             //Serial port: connection to autopilot over serial.
             SerialMAVLinkPort port = new SerialMAVLinkPort(schema);
@@ -112,7 +110,7 @@ public class Simulator implements Runnable {
         connHIL.addNode(autopilotMavLinkPort);
         connCommon.addNode(autopilotMavLinkPort);
         // UDP port: connection to ground station
-        UDPMavLinkPort udpGCMavLinkPort = new UDPMavLinkPort(schema);
+        udpGCMavLinkPort = new UDPMavLinkPort(schema);
         //udpGCMavLinkPort.setDebug(true);
         if (COMMUNICATE_WITH_QGC) {
             udpGCMavLinkPort.setup(qgcBindPort, qgcIpAddress, qgcPeerPort);
@@ -162,9 +160,11 @@ public class Simulator implements Runnable {
 
         // Create 3D visualizer
         visualizer = new Visualizer3D(world);
-
-        // default camera view
-        setFPV();
+        visualizer.setHilSystem(hilSystem);
+        visualizer.setVehicleViewObject(vehicle);
+        if (gimbal != null)
+            visualizer.setGimbalViewObject(gimbal);
+        visualizer.setViewStatic();
 
         // Create simulation report updater
         world.addObject(new ReportUpdater(world, visualizer));
@@ -182,38 +182,32 @@ public class Simulator implements Runnable {
         if (COMMUNICATE_WITH_QGC)
             udpGCMavLinkPort.open();
 
-        keyboardWatcher = new Runnable() {
-            InputStreamReader fileInputStream = new InputStreamReader(System.in);
-            BufferedReader bufferedReader = new BufferedReader(fileInputStream);
+        thisHandle = executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MICROSECONDS);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 try {
-                    // get user input as a String
-                    if (bufferedReader.ready()) {
-                        String input = bufferedReader.readLine();
-                        if (input.equals("f"))
-                            setFPV();
-                        else if (input.equals("g"))
-                            setGimbal();
-                        else if (input.equals("s"))
-                            setStaticCamera();
-                        else if (input.equals("x"))
-                            shutdown = true;
-                        else if (input.equals("i"))
-                            hilSystem.initMavLink();
-                        else if (input.equals("q"))
-                            hilSystem.endSim();
-                        else if (input.equals("r"))
-                            visualizer.toggleReportPanel();
-                    }
-                } catch (IOException e) {
+                    Thread.sleep(200);
+                    
+                    System.out.println("Shutting down...");
+                    if (hilSystem != null)
+                        hilSystem.endSim();
+                    
+                    // Close ports
+                    if (autopilotMavLinkPort != null)
+                        autopilotMavLinkPort.close();
+                    if (udpGCMavLinkPort != null)
+                        udpGCMavLinkPort.close();
+                    
+                    thisHandle.cancel(true);
+                    executor.shutdown();
+
+                } catch (InterruptedException | IOException e) {
                     e.printStackTrace();
                 }
             }
-        };
-
-        final ScheduledFuture<?> thisHandle = executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MICROSECONDS);
-        final ScheduledFuture<?> kwHandle = executor.scheduleAtFixedRate(keyboardWatcher, 0, 1, TimeUnit.MILLISECONDS);
+        });
 
         while(true) { 
             Thread.sleep(100);
@@ -221,15 +215,7 @@ public class Simulator implements Runnable {
             if (shutdown)
                 break;
         }
-
-        System.out.println("Shutdown.");
-        hilSystem.endSim();
-        // Close ports
-        autopilotMavLinkPort.close();
-        udpGCMavLinkPort.close();
-        kwHandle.cancel(true);
-        thisHandle.cancel(true);
-        executor.shutdown();
+        
         System.exit(0);
     }
 
@@ -255,30 +241,13 @@ public class Simulator implements Runnable {
     }
 
     private CameraGimbal2D buildGimbal() {
-        gimbal = new CameraGimbal2D(world);
-        gimbal.setBaseObject(vehicle);
-        gimbal.setPitchChannel(DEFAULT_CAM_PITCH_CHAN);
-        gimbal.setPitchScale(DEFAULT_CAM_PITCH_SCAL); 
-        gimbal.setRollChannel(DEFAULT_CAM_ROLL_CHAN);
-        gimbal.setRollScale(DEFAULT_CAM_ROLL_SCAL);
-        return gimbal;
-    }
-
-    public void setFPV() {
-        // Put camera on vehicle (FPV)
-        visualizer.setViewerPositionObject(vehicle);
-        visualizer.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
-    }
-
-    public void setGimbal() {
-        visualizer.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
-        visualizer.setViewerPositionObject(gimbal);
-    }
-
-    public void setStaticCamera() {
-        // Put camera on static point and point to vehicle
-        visualizer.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
-        visualizer.setViewerTargetObject(vehicle);
+        CameraGimbal2D g = new CameraGimbal2D(world);
+        g.setBaseObject(vehicle);
+        g.setPitchChannel(DEFAULT_CAM_PITCH_CHAN);
+        g.setPitchScale(DEFAULT_CAM_PITCH_SCAL); 
+        g.setRollChannel(DEFAULT_CAM_ROLL_CHAN);
+        g.setRollScale(DEFAULT_CAM_ROLL_SCAL);
+        return g;
     }
 
     public void run() {
@@ -291,7 +260,7 @@ public class Simulator implements Runnable {
             executor.shutdown();
         }
     }
-
+    
     public final static String PRINT_INDICATION_STRING = "-m [<MsgID[, MsgID]...>]";
     public final static String UDP_STRING = "-udp <mav ip>:<mav port>";
     public final static String QGC_STRING = "-qgc"; // <qgc ip address>:<qgc peer port> <qgc bind port>
@@ -306,15 +275,6 @@ public class Simulator implements Runnable {
 
     public static void main(String[] args)
             throws InterruptedException, IOException, ParserConfigurationException, SAXException {
-
-        // default is to use UDP.
-        if (args.length == 0) {
-            USE_SERIAL_PORT = false;
-        }
-        if (args.length > 8) {
-            System.err.println("Incorrect number of arguments. \n Usage: " + USAGE_STRING);
-            return;
-        }
 
         int i = 0;
         while (i < args.length) {
@@ -473,7 +433,9 @@ public class Simulator implements Runnable {
         if (i != args.length) {
             System.err.println("Usage: " + USAGE_STRING);
             return;
-        } else { System.out.println("Options parsed, starting Sim.  Press x<ENTER> to exit."); }
+        } else { 
+            System.out.println("Options parsed, starting Sim."); 
+        }
 
         new Simulator();
     }
@@ -497,16 +459,17 @@ public class Simulator implements Runnable {
         System.out.println(PRINT_INDICATION_STRING);
         System.out.println("      Monitor (echo) all/selected MAVLink messages to the console.");
         System.out.println("      If no MsgIDs are specified, all messages are monitored.\n");
-        System.out.println("Key commands (in the console, press the key and then <ENTER>):");
+        System.out.println("Key commands (in the visualizer window):");
         System.out.println(" Views:");
-        System.out.println("   f - First-person camera.");
-        System.out.println("   s - Stationary camera.");
-        System.out.println("   g - Gimbal camera.");
+        System.out.println("   F - First-person camera.");
+        System.out.println("   S - Stationary camera.");
+        System.out.println("   G - Gimbal camera.");
         System.out.println(" Other:");
-        System.out.println("   q - Disable sim on MAV.");
-        System.out.println("   i - Enable sim on MAV.");
-        System.out.println("   r - Show/hide data reports in visualizer window.");
-        System.out.println("   x - Exit jMAVSim.");
+        System.out.println("   Q - Disable sim on MAV.");
+        System.out.println("   I - Enable sim on MAV.");
+        System.out.println("   R - Show/hide data reports.");
+        System.out.println("  ESC - Exit jMAVSim.");
+        System.out.println("");
         //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
     }
 

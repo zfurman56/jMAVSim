@@ -7,7 +7,9 @@ import com.sun.j3d.utils.universe.SimpleUniverse;
 import javax.media.j3d.*;
 import javax.swing.*;
 import javax.vecmath.*;
+
 import java.awt.*;
+import java.awt.event.*;
 import java.util.Enumeration;
 
 /**
@@ -24,15 +26,22 @@ public class Visualizer3D extends JFrame {
     private TransformGroup viewerTransformGroup;
     private KinematicObject viewerTargetObject;
     private KinematicObject viewerPositionObject;
+    private KinematicObject vehicleViewObject;
+    private KinematicObject gimbalViewObject;
     private ReportPanel reportPanel;
+    private MAVLinkHILSystem hilSystem;
 
     public Visualizer3D(World world) {
         this.world = world;
 
         setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);  // HIDE_ON_CLOSE
+        setTitle("jMAVSim");
+        
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
         Canvas3D canvas = new Canvas3D(gc);
+        canvas.setFocusable(true);
+        canvas.addKeyListener(new KeyboardHandler());
         getContentPane().add(canvas);
         
         universe = new SimpleUniverse(canvas);
@@ -96,6 +105,33 @@ public class Visualizer3D extends JFrame {
      */
     public void setViewerPositionOffset(Vector3d offset) {
         this.viewerPositionOffset = offset;
+    }
+
+    /**
+     * Set the "vehicle" object to use for switching views.
+     *
+     * @param object
+     */
+    public void setVehicleViewObject(KinematicObject object) {
+        this.vehicleViewObject = object;
+    }
+
+    /**
+     * Set the "gimbal" object to use for switching views.
+     *
+     * @param object
+     */
+    public void setGimbalViewObject(KinematicObject object) {
+        this.gimbalViewObject = object;
+    }
+
+    /**
+     * Set the system being controlled.
+     *
+     * @param system
+     */
+    public void setHilSystem(MAVLinkHILSystem system) {
+        this.hilSystem = system;
     }
 
     /**
@@ -260,5 +296,80 @@ public class Visualizer3D extends JFrame {
                 wakeupOn(condition);
             }
         }
+    }
+
+    public void setViewFPV() {
+        // Put camera on vehicle (FPV)
+        if (vehicleViewObject != null) {
+            this.setViewerPositionObject(vehicleViewObject);
+            this.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
+        }
+    }
+
+    public void setViewGimbal() {
+        if (gimbalViewObject != null) {
+            this.setViewerPositionObject(gimbalViewObject);
+            this.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
+        }
+    }
+
+    public void setViewStatic() {
+        // Put camera on static point and point to vehicle
+        if (vehicleViewObject != null) {
+            this.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
+            this.setViewerTargetObject(vehicleViewObject);
+        }
+    }
+    
+    
+    /////// KeyboardHandler ///////
+    
+    public class KeyboardHandler extends KeyAdapter {
+
+        @Override
+        public void keyReleased(KeyEvent e) {
+            
+            switch (e.getKeyCode()) {
+            
+            case KeyEvent.VK_F :
+                setViewFPV();
+                break;
+
+            case KeyEvent.VK_S :
+                setViewStatic();
+                break;
+
+            case KeyEvent.VK_G :
+                setViewGimbal();
+                break;
+                
+            case KeyEvent.VK_R :
+                toggleReportPanel();
+                break;
+
+            case KeyEvent.VK_I :
+                if (hilSystem != null)
+                    hilSystem.initMavLink();
+                break;
+
+            case KeyEvent.VK_Q :
+                if (hilSystem != null)
+                    hilSystem.endSim();
+                break;
+
+            case KeyEvent.VK_ESCAPE :
+                dispatchEvent(new WindowEvent(getWindows()[0], WindowEvent.WINDOW_CLOSING));
+                break;
+                
+            }
+            
+        }
+
+//      @Override
+//      public void keyPressed(KeyEvent e) {
+//          keyString = "key code = " + e.getKeyCode() + " (" + KeyEvent.getKeyText(e.getKeyCode()) + ")";
+//          setReportText(keyString);
+//      }
+
     }
 }
