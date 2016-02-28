@@ -30,7 +30,7 @@
     </target>
 
     <target name="jmavsim" description="Link classes and JARs for jMAVSim" depends="compile">
-        <jar id="jmavsim" destfile="${build.dir}/jmavsim.jar" manifest="MANIFEST.MF">
+        <jar id="jmavsim" jarfile="${build.dir}/jmavsim.jar">
             <fileset dir="${classes.dir}">
                 <include name="**/*.class"/>
             </fileset>
