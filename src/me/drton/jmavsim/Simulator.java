@@ -136,10 +136,10 @@ public class Simulator implements Runnable {
         world.addObject(simpleEnvironment);
 
         // Set declination based on the initialization position of the Simulator
-        // getMagDeclination() is in degrees, GPS position is in radians and the result
-        // variable decl is back in radians.
-        double decl = (world.getEnvironment().getMagDeclination(referencePos.lat / Math.PI * 180.0, referencePos.lon / Math.PI * 180.0) / 180.0) * Math.PI;
-
+        // getMagDeclination() returns degrees and variable decl is in radians.
+        double decl = Math.toRadians(world.getEnvironment().getMagDeclination(referencePos.lat, referencePos.lon));
+        //System.out.println("Declination: " + (Math.toDegrees(decl)));
+        
         Matrix3d magDecl = new Matrix3d();
         magDecl.rotZ(decl);
         magDecl.transform(magField);
