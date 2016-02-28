@@ -30,6 +30,7 @@ public class Simulator implements Runnable {
     public static boolean SHOW_REPORT_PANEL = false;
     
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
+    public static final int    DEFAULT_AUTOPILOT_SYSID = 1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
     public static final String DEFAULT_AUTOPILOT_TYPE = "generic";  // eg. "px4" or "aq"
     public static final int    DEFAULT_AUTOPILOT_PORT = 14560;
     public static final int    DEFAULT_QGC_BIND_PORT = 0;
@@ -45,6 +46,7 @@ public class Simulator implements Runnable {
 
     
     private static int sleepInterval = (int)1e6 / DEFAULT_SIM_SPEED;  // Main loop interval, in us
+    private static int autopilotSysId = DEFAULT_AUTOPILOT_SYSID;
     private static String autopilotType = DEFAULT_AUTOPILOT_TYPE;
     private static String autopilotIpAddress = LOCAL_HOST;
     private static int autopilotPort = DEFAULT_AUTOPILOT_PORT;
@@ -147,7 +149,7 @@ public class Simulator implements Runnable {
 
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
-        MAVLinkHILSystem hilSystem = new MAVLinkHILSystem(schema, 1, 51, vehicle);
+        MAVLinkHILSystem hilSystem = new MAVLinkHILSystem(schema, autopilotSysId, 51, vehicle);
         connHIL.addNode(hilSystem);
         world.addObject(vehicle);
 
