@@ -2,14 +2,18 @@ package me.drton.jmavsim;
 
 import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
+import me.drton.jmavsim.Visualizer3D.ViewTypes;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
 import me.drton.jmavsim.vehicle.Quadcopter;
+
 import org.xml.sax.SAXException;
 
+import javax.swing.JFrame;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
-import java.lang.Math;
 import javax.xml.parsers.ParserConfigurationException;
+
+import java.lang.Math;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,6 +30,8 @@ public class Simulator implements Runnable {
     public static boolean USE_SERIAL_PORT = false;
     public static boolean COMMUNICATE_WITH_QGC = true;
     public static boolean SHOW_REPORT_PANEL = false;
+    public static boolean GUI_START_MAXIMIZED = false;
+    public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_FPV;
     
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
     public static final int    DEFAULT_AUTOPILOT_SYSID = 1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
@@ -164,7 +170,11 @@ public class Simulator implements Runnable {
         visualizer.setVehicleViewObject(vehicle);
         if (gimbal != null)
             visualizer.setGimbalViewObject(gimbal);
-        visualizer.setViewStatic();
+        if (GUI_START_MAXIMIZED)
+            visualizer.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        
+        // set default view
+        visualizer.setViewType(GUI_START_VIEW);
 
         // Create simulation report updater
         world.addObject(new ReportUpdater(world, visualizer));
@@ -266,12 +276,14 @@ public class Simulator implements Runnable {
     public final static String QGC_STRING = "-qgc"; // <qgc ip address>:<qgc peer port> <qgc bind port>
     public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
     public final static String REP_STRING = "-rep";
+    public final static String GUI_MAX_STRING = "-max";
+    public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
     public final static String AP_STRING = "-ap <autopilot_type>";
     public final static String SPEED_STRING = "-r <Hz>";
     public final static String CMD_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
     public final static String CMD_STRING_JAR = "java -jar jmavsim_run.jar";
     public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] " + 
-                                              "[" + QGC_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
+                                              "[" + QGC_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
             throws InterruptedException, IOException, ParserConfigurationException, SAXException {
@@ -422,8 +434,26 @@ public class Simulator implements Runnable {
                     System.err.println("-r requires Hz as an argument.");
                     return;
                 }
+            } else if (arg.equals("-view")) {
+                String t;
+                if (i < args.length) {
+                    t = args[i++];
+                    if (t.equals("fpv"))
+                        GUI_START_VIEW = ViewTypes.VIEW_FPV;
+                    else if (t.equals("grnd"))
+                        GUI_START_VIEW = ViewTypes.VIEW_STATIC;
+                    else if (t.equals("gmbl"))
+                        GUI_START_VIEW = ViewTypes.VIEW_GIMBAL;
+                    else
+                        System.out.println("Warning: Unrecognized value for -view option, ignoring.");
+                } else {
+                    System.err.println("-view requires an argument: " + GUI_VIEW_STRING);
+                    return;
+                }
             } else if (arg.equals("-rep")) {
                 SHOW_REPORT_PANEL = true;
+            } else if (arg.equals("-max")) {
+                GUI_START_MAXIMIZED = true;
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
@@ -451,9 +481,13 @@ public class Simulator implements Runnable {
         System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency of the HIL_SENSOR messages.");
         System.out.println("      Default is " + DEFAULT_SIM_SPEED + " Hz\n");
         System.out.println(AP_STRING);
-        System.out.println("      Specify a specific MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
+        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
         System.out.println(QGC_STRING);
         System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "\n");
+        System.out.println(GUI_VIEW_STRING);
+        System.out.println("      Start with the specified view type. One of: 'fpv', 'grnd', or 'gmbl'. Default is 'fpv'.\n");
+        System.out.println(GUI_MAX_STRING);
+        System.out.println("      Start with the visualizer GUI window maximized.\n");
         System.out.println(REP_STRING);
         System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).\n");
         System.out.println(PRINT_INDICATION_STRING);

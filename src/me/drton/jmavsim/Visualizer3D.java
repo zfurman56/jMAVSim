@@ -16,6 +16,8 @@ import java.util.Enumeration;
  * 3D Visualizer, works in own thread, synchronized with "world" thread.
  */
 public class Visualizer3D extends JFrame {
+    public static enum ViewTypes { VIEW_STATIC, VIEW_FPV, VIEW_GIMBAL }
+    
     private static Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
     private final World world;
     private SimpleUniverse universe;
@@ -251,27 +253,25 @@ public class Visualizer3D extends JFrame {
                 mat1.rotX(-Math.PI / 2);
                 mat.mul(mat1);
                 viewerTransform.setRotation(mat);
-            } else {
-                // Fixed camera
-                if (viewerTargetObject != null) {
-                    // Point camera to target
-                    Vector3d pos = viewerTargetObject.getPosition();
-                    Vector3d dist = new Vector3d();
-                    dist.sub(pos, viewerPosition);
+            } 
+            else if (viewerTargetObject != null) {
+                // Fixed-position camera, point camera to target
+                Vector3d pos = viewerTargetObject.getPosition();
+                Vector3d dist = new Vector3d();
+                dist.sub(pos, viewerPosition);
 
-                    Matrix3d mat = new Matrix3d();
-                    Matrix3d mat1 = new Matrix3d();
-                    mat.rotZ(Math.PI);
-                    mat1.rotY(Math.PI / 2);
-                    mat.mul(mat1);
-                    mat1.rotZ(-Math.PI / 2);
-                    mat.mul(mat1);
-                    mat1.rotY(-Math.atan2(pos.y - viewerPosition.y, pos.x - viewerPosition.x));
-                    mat.mul(mat1);
-                    mat1.rotX(-Math.asin((pos.z - viewerPosition.z) / dist.length()));
-                    mat.mul(mat1);
-                    viewerTransform.setRotation(mat);
-                }
+                Matrix3d mat = new Matrix3d();
+                Matrix3d mat1 = new Matrix3d();
+                mat.rotZ(Math.PI);
+                mat1.rotY(Math.PI / 2);
+                mat.mul(mat1);
+                mat1.rotZ(-Math.PI / 2);
+                mat.mul(mat1);
+                mat1.rotY(-Math.atan2(pos.y - viewerPosition.y, pos.x - viewerPosition.x));
+                mat.mul(mat1);
+                mat1.rotX(-Math.asin((pos.z - viewerPosition.z) / dist.length()));
+                mat.mul(mat1);
+                viewerTransform.setRotation(mat);
             }
             viewerTransformGroup.setTransform(viewerTransform);
         }
@@ -298,29 +298,32 @@ public class Visualizer3D extends JFrame {
         }
     }
 
-    public void setViewFPV() {
-        // Put camera on vehicle (FPV)
-        if (vehicleViewObject != null) {
-            this.setViewerPositionObject(vehicleViewObject);
-            this.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
-        }
-    }
+    public void setViewType(ViewTypes v) {
+        switch (v) {
+            case VIEW_STATIC :
+                // Put camera on static point and point to vehicle
+                if (vehicleViewObject != null) {
+                    this.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
+                    this.setViewerTargetObject(vehicleViewObject);
+                }
+                break;
 
-    public void setViewGimbal() {
-        if (gimbalViewObject != null) {
-            this.setViewerPositionObject(gimbalViewObject);
-            this.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
-        }
-    }
+            case VIEW_FPV :
+                // Put camera on vehicle (FPV)
+                if (vehicleViewObject != null) {
+                    this.setViewerPositionObject(vehicleViewObject);
+                    this.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
+                }
+                break;
 
-    public void setViewStatic() {
-        // Put camera on static point and point to vehicle
-        if (vehicleViewObject != null) {
-            this.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
-            this.setViewerTargetObject(vehicleViewObject);
+            case VIEW_GIMBAL :
+                if (gimbalViewObject != null) {
+                    this.setViewerPositionObject(gimbalViewObject);
+                    this.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
+                }
+                break;
         }
     }
-    
     
     /////// KeyboardHandler ///////
     
@@ -332,15 +335,15 @@ public class Visualizer3D extends JFrame {
             switch (e.getKeyCode()) {
             
             case KeyEvent.VK_F :
-                setViewFPV();
+                setViewType(ViewTypes.VIEW_FPV);
                 break;
 
             case KeyEvent.VK_S :
-                setViewStatic();
+                setViewType(ViewTypes.VIEW_STATIC);
                 break;
 
             case KeyEvent.VK_G :
-                setViewGimbal();
+                setViewType(ViewTypes.VIEW_GIMBAL);
                 break;
                 
             case KeyEvent.VK_R :
