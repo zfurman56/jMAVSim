@@ -22,10 +22,10 @@ public class Quadcopter extends AbstractMulticopter {
      * @param modelName      filename of model to load, in .obj format
      * @param orientation    "x" or "+"
      * @param style          rotor position layout style. "default"/"px4" for px4, or "cw_fr" CW sequential layout starting at front motor
-     * @param armLength      length of arm from center
-     * @param rotorThrust    full thrust of one rotor
-     * @param rotorTorque    torque at full thrust of one rotor
-     * @param rotorTimeConst spin-up time of rotor
+     * @param armLength      length of arm from center [m]
+     * @param rotorThrust    full thrust of one rotor [N]
+     * @param rotorTorque    torque at full thrust of one rotor in [Nm]
+     * @param rotorTimeConst spin-up time of rotor [s]
      * @param rotorsOffset   rotors positions offset from gravity center
      * @throws FileNotFoundException if .obj model file not found
      */

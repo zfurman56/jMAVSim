@@ -30,7 +30,6 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
         builder.append(newLine);
         builder.append("===========");
         builder.append(newLine);
-        builder.append(newLine);
 
         builder.append("CONTROLS");
         builder.append(newLine);
@@ -39,7 +38,7 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
 
         if (getControl().size() > 0) {
             for (int i = 0; i < getControl().size(); i++) {
-                builder.append(Double.toString(getControl().get(i)));
+                builder.append(String.format("%.5f", getControl().get(i)));
                 builder.append(newLine);
             }
         } else {
@@ -51,9 +50,9 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
 
         for (int i = 0; i < getRotorsNum(); i++) {
             reportRotor(builder, i);
+            builder.append(newLine);
         }
 
-        builder.append(ReportingObject.newLine);
         builder.append(ReportingObject.newLine);
     }
 
@@ -67,25 +66,25 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
         builder.append(newLine);
 
         builder.append("Control: ");
-        builder.append(rotor.getControl());
+        builder.append(String.format("%.6f", rotor.getControl()));
         builder.append(newLine);
 
         builder.append("Thrust: ");
-        builder.append(rotor.getThrust());
+        builder.append(String.format("%.6f", rotor.getThrust()));
         builder.append(" / ");
-        builder.append(rotor.getFullThrust());
+        builder.append(String.format("%.6f", rotor.getFullThrust()));
         builder.append(" [N]");
         builder.append(newLine);
 
         builder.append("Torque: ");
-        builder.append(rotor.getThrust());
+        builder.append(String.format("%.6f", rotor.getTorque()));
         builder.append(" / ");
-        builder.append(rotor.getFullTorque());
-        builder.append(" [N * m]");
+        builder.append(String.format("%.6f", rotor.getFullTorque()));
+        builder.append(" [Nm]");
         builder.append(newLine);
 
         builder.append("Spin up: ");
-        builder.append(rotor.getTimeConstant());
+        builder.append(String.format("%.5f", rotor.getTimeConstant()));
         builder.append(" [s]");
         builder.append(newLine);
 
@@ -93,7 +92,6 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
         builder.append(ReportUtil.toShortString(getRotorPosition(rotorIndex)));
         builder.append(newLine);
 
-        builder.append(newLine);
     }
 
     /**
