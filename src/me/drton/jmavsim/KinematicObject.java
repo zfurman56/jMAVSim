@@ -88,4 +88,14 @@ public abstract class KinematicObject extends WorldObject {
     public Vector3d getRotationRate() {
         return rotationRate;
     }
+    
+    public void resetObjectParameters() {
+        position = new Vector3d();
+        velocity = new Vector3d();
+        acceleration = new Vector3d();
+        rotation = new Matrix3d();
+        rotationRate = new Vector3d();
+        
+        rotation.rotX(0);
+    }
 }

@@ -64,15 +64,8 @@ public class Visualizer3D extends JFrame {
             }
         }
         setVisible(true);
+        resetView();
 
-        Matrix3d mat = new Matrix3d();
-        Matrix3d mat1 = new Matrix3d();
-        mat.rotZ(Math.PI);
-        mat1.rotY(Math.PI / 2);
-        mat.mul(mat1);
-        mat1.rotZ(-Math.PI / 2);
-        mat.mul(mat1);
-        viewerTransform.setRotation(mat);
     }
 
     /**
@@ -182,6 +175,44 @@ public class Visualizer3D extends JFrame {
         reportPanel.setIsFocusable(pause);
     }
 
+    public void setViewType(ViewTypes v) {
+        switch (v) {
+            case VIEW_STATIC :
+                // Put camera on static point and point to vehicle
+                if (vehicleViewObject != null) {
+                    this.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
+                    this.setViewerTargetObject(vehicleViewObject);
+                }
+                break;
+
+            case VIEW_FPV :
+                // Put camera on vehicle (FPV)
+                if (vehicleViewObject != null) {
+                    this.setViewerPositionObject(vehicleViewObject);
+                    this.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
+                }
+                break;
+
+            case VIEW_GIMBAL :
+                if (gimbalViewObject != null) {
+                    this.setViewerPositionObject(gimbalViewObject);
+                    this.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
+                }
+                break;
+        }
+    }
+
+    public void resetView() {
+        Matrix3d mat = new Matrix3d();
+        Matrix3d mat1 = new Matrix3d();
+        mat.rotZ(Math.PI);
+        mat1.rotY(Math.PI / 2);
+        mat.mul(mat1);
+        mat1.rotZ(-Math.PI / 2);
+        mat.mul(mat1);
+        viewerTransform.setRotation(mat);
+    }
+ 
     private void createEnvironment() {
         BranchGroup group = new BranchGroup();
         // Sky
@@ -314,32 +345,6 @@ public class Visualizer3D extends JFrame {
         }
     }
 
-    public void setViewType(ViewTypes v) {
-        switch (v) {
-            case VIEW_STATIC :
-                // Put camera on static point and point to vehicle
-                if (vehicleViewObject != null) {
-                    this.setViewerPosition(new Vector3d(-5.0, 0.0, -1.7));
-                    this.setViewerTargetObject(vehicleViewObject);
-                }
-                break;
-
-            case VIEW_FPV :
-                // Put camera on vehicle (FPV)
-                if (vehicleViewObject != null) {
-                    this.setViewerPositionObject(vehicleViewObject);
-                    this.setViewerPositionOffset(new Vector3d(-0.6f, 0.0f, -0.3f));   // Offset from vehicle center
-                }
-                break;
-
-            case VIEW_GIMBAL :
-                if (gimbalViewObject != null) {
-                    this.setViewerPositionObject(gimbalViewObject);
-                    this.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
-                }
-                break;
-        }
-    }
     
     /////// KeyboardHandler ///////
     
@@ -378,6 +383,17 @@ public class Visualizer3D extends JFrame {
             case KeyEvent.VK_Q :
                 if (hilSystem != null)
                     hilSystem.endSim();
+                break;
+                
+            case KeyEvent.VK_SPACE :
+                if (vehicleViewObject != null) {
+                    vehicleViewObject.resetObjectParameters();
+                    vehicleViewObject.position.set(0.0, 0.0, world.getEnvironment().getGroundLevel(new Vector3d(0.0, 0.0, 0.0)));
+                }
+                if (gimbalViewObject != null)
+                    gimbalViewObject.resetObjectParameters();
+                
+                resetView();
                 break;
 
             case KeyEvent.VK_ESCAPE :
