@@ -55,6 +55,11 @@ public class LogPlayerSensors implements Sensors {
     }
 
     @Override
+    public double getPressure() {
+        return SimpleEnvironment.alt2baro(getPressureAlt());
+    }
+    
+    @Override
     public GNSSReport getGNSS() {
         return gnss;
     }
@@ -121,4 +126,5 @@ public class LogPlayerSensors implements Sensors {
             }
         }
     }
+
 }
