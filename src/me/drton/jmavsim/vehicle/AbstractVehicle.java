@@ -5,6 +5,7 @@ import me.drton.jmavsim.Sensors;
 import me.drton.jmavsim.World;
 
 import javax.vecmath.Vector3d;
+
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,7 +18,7 @@ import java.util.List;
  */
 public abstract class AbstractVehicle extends DynamicObject {
     protected List<Double> control = Collections.emptyList();
-    private Sensors sensors = null;
+    protected Sensors sensors = null;
 
     public AbstractVehicle(World world, String modelName) throws FileNotFoundException {
         super(world);
