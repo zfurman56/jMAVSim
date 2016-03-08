@@ -118,6 +118,32 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
         windCurrent.add(r);
     }
 
+
+    /**
+     * Convert altitude to barometric pressure
+     *
+     * @param alt        Altitude in meters
+     * 
+     * @return Barometric pressure in Pa
+     */
+    public static double alt2baro(double alt) {
+        double Pb = 101325.0;  // static pressure at sea level [Pa]
+        double Tb = 288.15;    // standard temperature at sea level [K]
+        double Lb = -0.0065;   // standard temperature lapse rate [K/m]
+        double M = 0.0289644;  // molar mass of Earth’s air [kg/mol]
+        double G = 9.80665;    // gravity
+        double R = 8.31432;    // universal gas constant
+        if (alt < 11000.0) {
+            return Pb * Math.pow(Tb / (Tb + (Lb * alt)), (G * M) / (R * Lb));
+        } else if (alt <= 20000.0) {
+            double f = 11000.0;
+            double a = Pb * Math.pow(Tb / (Tb + (Lb * f)), (G * M) / (R * Lb));
+            double c = Tb + (f * Lb);
+            return a * Math.exp(((-G) * M * (alt - f)) / (R * c));
+        }
+        return 0.0;
+    }
+    
     public double getMagDeclination(double lat, double lon) {
         /*
          * If the values exceed valid ranges, return zero as default

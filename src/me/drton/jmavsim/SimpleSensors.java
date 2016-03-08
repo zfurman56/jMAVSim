@@ -98,6 +98,11 @@ public class SimpleSensors implements Sensors {
     }
 
     @Override
+    public double getPressure() {
+        return SimpleEnvironment.alt2baro(getPressureAlt());
+    }
+
+    @Override
     public GNSSReport getGNSS() {
         return gps;
     }
