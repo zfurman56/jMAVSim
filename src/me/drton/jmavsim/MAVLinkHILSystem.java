@@ -17,8 +17,9 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
     private AbstractVehicle vehicle;
     private boolean gotHeartBeat = false;
     private boolean inited = false;
+    private boolean stopped = false;
     private long initTime = 0;
-    private long initDelay = 1000;
+    private long initDelay = 500;
 
     /**
      * Create MAVLinkHILSimulator, MAVLink system that sends simulated sensors to autopilot and passes controls from
@@ -43,7 +44,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                     msg.getDouble("aux2"), msg.getDouble("aux3"), msg.getDouble("aux4"));
             vehicle.setControl(control);
         } else if ("HEARTBEAT".equals(msg.getMsgName())) {
-            if (!gotHeartBeat) {
+            if (!gotHeartBeat && !stopped) {
                 if (sysId < 0 || sysId == msg.systemID) {
                     gotHeartBeat = true;
                     initTime = t + initDelay;
@@ -55,7 +56,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                         ". Please change the system ID parameter to match in order to use HITL/SITL.");
                 }
             }
-            if (!inited && t > initTime) {
+            if (gotHeartBeat && !inited && t > initTime) {
                 System.out.println("Init MAVLink");
                 initMavLink();
                 inited = true;
@@ -74,6 +75,9 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         msg.set("target_system", sysId);
         msg.set("base_mode", 32);     // HIL, disarmed
         sendMessage(msg);
+        if (vehicle.getSensors().getGPSStartTime() == -1)
+            vehicle.getSensors().setGPSStartTime(System.currentTimeMillis() + 1000);
+        stopped = false;
     }
     
     public void endSim() {
@@ -84,6 +88,8 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         sendMessage(msg);
         inited = false;
         gotHeartBeat = false;
+        stopped = true;
+        vehicle.getSensors().setGPSStartTime(-1);
     }
     
     @Override
@@ -127,8 +133,8 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                 msg_gps.set("vn", (int) (gps.velocity.x * 100));
                 msg_gps.set("ve", (int) (gps.velocity.y * 100));
                 msg_gps.set("vd", (int) (gps.velocity.z * 100));
-                msg_gps.set("eph", (int) (gps.eph * 100));
-                msg_gps.set("epv", (int) (gps.epv * 100));
+                msg_gps.set("eph", (int) (gps.eph * 100f));
+                msg_gps.set("epv", (int) (gps.epv * 100f));
                 msg_gps.set("vel", (int) (gps.getSpeed() * 100));
                 msg_gps.set("cog", (int) Math.toDegrees(gps.getCog()) * 100);
                 msg_gps.set("fix_type", gps.fix);

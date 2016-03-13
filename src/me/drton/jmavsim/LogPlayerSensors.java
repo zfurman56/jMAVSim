@@ -35,6 +35,14 @@ public class LogPlayerSensors implements Sensors {
     }
 
     @Override
+    public void setGPSStartTime(long time) {}
+
+    @Override
+    public long getGPSStartTime() {
+        return 0;
+    }
+
+    @Override
     public Vector3d getAcc() {
         return acc;
     }
@@ -116,8 +124,8 @@ public class LogPlayerSensors implements Sensors {
                 gnss.position = new LatLonAlt(((Number) logData.get("GPS.Lat")).doubleValue(),
                         ((Number) logData.get("GPS.Lon")).doubleValue(),
                         ((Number) logData.get("GPS.Alt")).doubleValue());
-                gnss.eph = ((Number) logData.get("GPS.EPH")).doubleValue();
-                gnss.epv = ((Number) logData.get("GPS.EPV")).doubleValue();
+                gnss.eph = ((Number) logData.get("GPS.EPH")).floatValue();
+                gnss.epv = ((Number) logData.get("GPS.EPV")).floatValue();
                 gnss.velocity = new Vector3d(((Number) logData.get("GPS.VelN")).doubleValue(),
                         ((Number) logData.get("GPS.VelE")).doubleValue(),
                         ((Number) logData.get("GPS.VelD")).doubleValue());

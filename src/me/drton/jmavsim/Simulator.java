@@ -37,8 +37,8 @@ public class Simulator implements Runnable {
     public static boolean GUI_START_MAXIMIZED = false;
     public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_FPV;
     
-    public static final int    DEFAULT_SIM_SPEED = 500; // Hz
-    public static final int    DEFAULT_AUTOPILOT_SYSID = 1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
+    public static final int    DEFAULT_SIM_SPEED = 800; // Hz
+    public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
     public static final String DEFAULT_AUTOPILOT_TYPE = "generic";  // eg. "px4" or "aq"
     public static final int    DEFAULT_AUTOPILOT_PORT = 14560;
     public static final int    DEFAULT_QGC_BIND_PORT = 0;
@@ -62,8 +62,8 @@ public class Simulator implements Runnable {
     // Moscow:  (0.31337f, 0.06030f, 0.94771f)
     public static final Vector3d  DEFAULT_MAG_FIELD = new Vector3d(0.44831f, 0.01664f, 0.89372f);
     
-    public static final int    DEFAULT_CAM_PITCH_CHAN =  4;     // Control gimbal pitch from autopilot, -1 to disable
-    public static final int    DEFAULT_CAM_ROLL_CHAN  = -1;     // Control gimbal roll from autopilot, -1 to disable
+    public static final int    DEFAULT_CAM_PITCH_CHAN = 7;     // Control gimbal pitch from autopilot, -1 to disable
+    public static final int    DEFAULT_CAM_ROLL_CHAN  = 6;     // Control gimbal roll from autopilot, -1 to disable
     public static final Double DEFAULT_CAM_PITCH_SCAL = 1.57;  // channel value to physical movement (+/-90 deg)
     public static final Double DEFAULT_CAM_ROLL_SCAL  = 1.57;  // channel value to physical movement (+/-90 deg)
 
@@ -123,7 +123,8 @@ public class Simulator implements Runnable {
             //port.setDebug(true);
             port.setup(0, autopilotIpAddress, autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
             // monitor certain mavlink messages.
-            if (monitorMessage)  port.setMonitorMessageID(monitorMessageIds);
+            if (monitorMessage)
+                port.setMonitorMessageID(monitorMessageIds);
             autopilotMavLinkPort = port;
         }
 
@@ -145,7 +146,7 @@ public class Simulator implements Runnable {
         SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
 
         //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
-        //simpleEnvironment.setWindDeviation(0.0);
+        simpleEnvironment.setWindDeviation(0.0);
         simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
 
@@ -171,6 +172,7 @@ public class Simulator implements Runnable {
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
         hilSystem = new MAVLinkHILSystem(schema, autopilotSysId, 51, vehicle);
+        hilSystem.setHeartbeatInterval(0);
         connHIL.addNode(hilSystem);
         world.addObject(vehicle);
 
@@ -226,7 +228,8 @@ public class Simulator implements Runnable {
                     if (udpGCMavLinkPort != null)
                         udpGCMavLinkPort.close();
                     
-                    thisHandle.cancel(true);
+                    if (thisHandle != null)
+                        thisHandle.cancel(true);
                     executor.shutdown();
 
                 } catch (InterruptedException | IOException e) {
@@ -247,22 +250,23 @@ public class Simulator implements Runnable {
 
     private AbstractMulticopter buildMulticopter() throws IOException {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", "default", 
-                                                        0.33 / 2, 4.0, 0.05, 0.005, gc);
-        vehicle.setMass(0.8);
+        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
+        vehicle.setMass(0.25);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
-        I.m00 = 0.005;  // X
-        I.m11 = 0.005;  // Y
-        I.m22 = 0.009;  // Z
+        I.m00 = 0.0017;  // X
+        I.m11 = 0.0017;  // Y
+        I.m22 = 0.002;  // Z
         vehicle.setMomentOfInertia(I);
         SimpleSensors sensors = new SimpleSensors();
-        sensors.setGPSDelay(200);
-        sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
+        sensors.setGPSInterval(50);
+        sensors.setGPSDelay(10);
+        //sensors.setGPSStartTime(-1);
+        sensors.setPressureAltOffset(world.getGlobalReference().alt);
         vehicle.setSensors(sensors);
-        vehicle.setDragMove(0.02);
+        vehicle.setDragMove(0.01);
         //v.setDragRotate(0.1);
-
+        
         return vehicle;
     }
 
@@ -278,11 +282,11 @@ public class Simulator implements Runnable {
 
     public void run() {
         try {
-            //keyboardWatcher.run();
-            long t = System.currentTimeMillis();
-            world.update(t);
+            world.update(System.currentTimeMillis());
         }
         catch (Exception e) {
+            System.err.println("Exception in Simulator.world.update() : ");
+            e.printStackTrace();
             executor.shutdown();
         }
     }
@@ -574,11 +578,12 @@ public class Simulator implements Runnable {
         System.out.println("   S - Stationary camera.");
         System.out.println("   G - Gimbal camera.");
         System.out.println(" Other:");
-        System.out.println("   Q - Disable sim on MAV.");
-        System.out.println("   I - Enable sim on MAV.");
-        System.out.println("   R - Show/hide data reports.");
-        System.out.println("   T - Pause/resume data report updates.");
-        System.out.println("  ESC - Exit jMAVSim.");
+        System.out.println("   Q   - Disable sim on MAV.");
+        System.out.println("   I   - Enable sim on MAV.");
+        System.out.println("   R   - Show/hide data reports.");
+        System.out.println("   T   - Pause/resume data report updates.");
+        System.out.println(" SPACE - Reset vehicle & view to start position.");
+        System.out.println("  ESC  - Exit jMAVSim.");
         System.out.println("");
         //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
     }

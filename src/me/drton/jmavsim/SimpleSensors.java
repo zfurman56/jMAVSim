@@ -13,13 +13,26 @@ public class SimpleSensors implements Sensors {
     private DynamicObject object;
     private GlobalPositionProjector globalProjector = new GlobalPositionProjector();
     private DelayLine<GNSSReport> gpsDelayLine = new DelayLine<GNSSReport>();
-    private long gpsStartTime = 0;
-    private long gpsInterval = 200;
-    private long gpsLast = 0;
+    private long gpsStartTime = -1;
+    private long gpsInterval = 200;  // [ms]
+    private long gpsNext = 0;
     private GNSSReport gps = new GNSSReport();
     private boolean gpsUpdated = false;
     private double pressureAltOffset = 0.0;
+    private float ephHigh = 100.0f;  // starting GPS horizontal estimation accuracy
+    private float ephLow = 0.1f;     // final GPS horizontal estimation accuracy
+    private float epvHigh = 100.0f;  // starting GPS vertical estimation accuracy
+    private float epvLow = 0.2f;     // final GPS vertical estimation accuracy
+    private float fix3Deph = 3.0f;   // maximum h-acc for a "3D" fix
+    private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
+    // accuracy smoothing filters, slowly improve h/v accuracy after startup
+    private Filter ephFilter = new Filter();
+    private Filter epvFilter = new Filter();
 
+    public SimpleSensors() {
+        initFilters();
+    }
+    
     @Override
     public void setObject(DynamicObject object) {
         this.object = object;
@@ -44,6 +57,11 @@ public class SimpleSensors implements Sensors {
         return x0 * stdDev;
     }
 
+    private void initFilters() {
+        ephFilter.filterInit(1.0 / gpsInterval, 0.9, ephHigh);
+        epvFilter.filterInit(1.0 / gpsInterval, 0.9, epvHigh);
+    }
+    
     public Vector3d addZeroMeanNoise(Vector3d vIn, double stdDev) {
 
         return new Vector3d(vIn.x + randomNoise(stdDev),
@@ -55,12 +73,18 @@ public class SimpleSensors implements Sensors {
         gpsStartTime = time;
     }
 
+    public long getGPSStartTime() {
+        return gpsStartTime;
+    }
+
     public void setGPSDelay(long delay) {
         gpsDelayLine.setDelay(delay);
     }
 
     public void setGPSInterval(long gpsInterval) {
         this.gpsInterval = gpsInterval;
+        // re-init filters with new dt
+        initFilters();
     }
 
     public void setPressureAltOffset(double pressureAltOffset) {
@@ -116,17 +140,21 @@ public class SimpleSensors implements Sensors {
 
     @Override
     public void update(long t) {
+        float eph, epv;
         // GPS
-        if (t > gpsStartTime && t > gpsLast + gpsInterval) {
-            gpsLast = t;
+        if (gpsStartTime > -1 && t > gpsStartTime && gpsNext <= t) {
+            gpsNext = t + gpsInterval;
             gpsUpdated = true;
             GNSSReport gpsCurrent = new GNSSReport();
             Vector3d pos = object.getPosition();
+            eph = (float)ephFilter.filter(ephLow);
+            epv = (float)epvFilter.filter(epvLow);
+            
             gpsCurrent.position = globalProjector.reproject(new double[]{pos.x, pos.y, pos.z});
-            gpsCurrent.eph = 0.4;
-            gpsCurrent.epv = 0.5;
+            gpsCurrent.eph = eph;
+            gpsCurrent.epv = epv;
             gpsCurrent.velocity = new Vector3d(object.getVelocity());
-            gpsCurrent.fix = 3;
+            gpsCurrent.fix = eph <= fix3Deph ? 3 : eph <= fix2Deph ? 2 : 0;
             gpsCurrent.time = System.currentTimeMillis() * 1000;
             gps = gpsDelayLine.getOutput(t, gpsCurrent);
         }

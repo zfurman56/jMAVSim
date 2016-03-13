@@ -22,5 +22,9 @@ public interface Sensors {
 
     boolean isGPSUpdated();
 
+    void setGPSStartTime(long time);
+    
+    long getGPSStartTime();
+    
     void update(long t);
 }
