@@ -8,7 +8,7 @@ public class ReportUpdater extends WorldObject {
 
     private static final StringBuilder builder = new StringBuilder();
     private final Visualizer3D visualizer;
-    private long lastUpdateT;
+    private long nextUpdateT;
 
 
     public ReportUpdater(World world, Visualizer3D visualizer) {
@@ -18,11 +18,10 @@ public class ReportUpdater extends WorldObject {
 
     @Override
     public void update(long t) {
-        if (t < lastUpdateT + UPDATE_FREQ_MS) {
+        if (t < nextUpdateT)
             return;
-        }
 
-        lastUpdateT = t;
+        nextUpdateT = t + UPDATE_FREQ_MS;
         builder.setLength(0);
 
         for (WorldObject object : getWorld().getObjects()) {

@@ -26,7 +26,6 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
     }
 
     public void report(StringBuilder builder) {
-        if (sensors.getGNSS() != null) {
         builder.append("VEHICLE");
         builder.append(newLine);
         builder.append("===========");
@@ -35,14 +34,15 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
 
         builder.append("Position:\n");
         builder.append(newLine);
-        builder.append(String.format("  Lat: %.5f;\n  Lon: %.5f\n  Alt: %.5f", sensors.getGNSS().position.lat, sensors.getGNSS().position.lat, sensors.getGNSS().position.alt));
-        builder.append(newLine);
-        builder.append(String.format("  Baro Alt: %.5f;\n  Pa: %.5f", sensors.getPressureAlt(), sensors.getPressure()));
+        if (sensors.getGNSS() != null) {
+            builder.append(String.format("  Lat: %.8f;\n  Lon: %.8f\n  Alt: %.3f", sensors.getGNSS().position.lat, sensors.getGNSS().position.lat, sensors.getGNSS().position.alt));
+            builder.append(newLine);
+        }
+        builder.append(String.format("  Baro Alt: %.3f;\n  Pa: %.2f", sensors.getPressureAlt(), sensors.getPressure()));
         builder.append(newLine);
         builder.append(String.format("  X: %.5f Y: %.5f Z: %.5f", position.x, position.y, position.z));
         builder.append(newLine);
         builder.append(newLine);
-        }
         
         builder.append("MULTICOPTER");
         builder.append(newLine);
