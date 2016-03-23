@@ -37,7 +37,7 @@ public class Simulator implements Runnable {
     public static boolean GUI_START_MAXIMIZED = false;
     public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_FPV;
     
-    public static final int    DEFAULT_SIM_SPEED = 800; // Hz
+    public static final int    DEFAULT_SIM_SPEED = 500; // Hz
     public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
     public static final String DEFAULT_AUTOPILOT_TYPE = "generic";  // eg. "px4" or "aq"
     public static final int    DEFAULT_AUTOPILOT_PORT = 14560;
@@ -51,22 +51,30 @@ public class Simulator implements Runnable {
     // Zurich Irchel Park: 47.397742, 8.545594, 488m
     // Seattle downtown: 47.592182, -122.316031, 86m
     // Moscow downtown: 55.753395, 37.625427, 155m
-    public static final LatLonAlt DEFAULT_ORIGIN_POS = new LatLonAlt(47.397742, 8.545594, 488);
+    // Trumansburg: 42.5339037, -76.6452384, 287m
+    public static LatLonAlt DEFAULT_ORIGIN_POS = new LatLonAlt(47.397742, 8.545594, 488);
 
-    // Mag vector in earth field. If Y value is left as zero, then the
-    //   declination will be added later based on the origin GPS position.
-    // If DO_MAG_FIELD_LOOKUP = true or -automag switch is used then this value is ignored.
-    // 
+    // Mag inclination and declination in degrees. If both are left as zero, then DEFAULT_MAG_FIELD is used.
+    // If DO_MAG_FIELD_LOOKUP = true or -automag switch is used then both this value and DEFAULT_MAG_FIELD are ignored.
+    // Zurich:  63.32, 2.13
+    // Seattle: 
+    // Moscow:  
+    // T-burg: 68.53, -11.94
+    public static double  DEFAULT_MAG_INCL = 63.32;
+    public static double  DEFAULT_MAG_DECL = 2.13;
+    // Alternate way to set mag field vectors directly if MAG_INCL and MAG_DECL are zero. 
+    //   If Y value is left as zero, then an approximate declination will be added later based on the origin GPS position.
     // Zurich:  (0.44831f, 0.01664f, 0.89372f)
     // Seattle: (0.34252f, 0.09805f, 0.93438f)
     // Moscow:  (0.31337f, 0.06030f, 0.94771f)
-    public static final Vector3d  DEFAULT_MAG_FIELD = new Vector3d(0.44831f, 0.01664f, 0.89372f);
+    public static Vector3d  DEFAULT_MAG_FIELD = new Vector3d(0.44831f, 0.01664f, 0.89372f);
     
-    public static final int    DEFAULT_CAM_PITCH_CHAN = 7;     // Control gimbal pitch from autopilot, -1 to disable
-    public static final int    DEFAULT_CAM_ROLL_CHAN  = 6;     // Control gimbal roll from autopilot, -1 to disable
-    public static final Double DEFAULT_CAM_PITCH_SCAL = 1.57;  // channel value to physical movement (+/-90 deg)
-    public static final Double DEFAULT_CAM_ROLL_SCAL  = 1.57;  // channel value to physical movement (+/-90 deg)
+    public static int    DEFAULT_CAM_PITCH_CHAN = 4;     // Control gimbal pitch from autopilot, -1 to disable
+    public static int    DEFAULT_CAM_ROLL_CHAN  = -1;     // Control gimbal roll from autopilot, -1 to disable
+    public static Double DEFAULT_CAM_PITCH_SCAL = 1.57;  // channel value to physical movement (+/-90 deg)
+    public static Double DEFAULT_CAM_ROLL_SCAL  = 1.57;  // channel value to physical movement (+/-90 deg)
 
+    
     private static int sleepInterval = (int)1e6 / DEFAULT_SIM_SPEED;  // Main loop interval, in us
     private static int autopilotSysId = DEFAULT_AUTOPILOT_SYSID;
     private static String autopilotType = DEFAULT_AUTOPILOT_TYPE;
@@ -77,21 +85,21 @@ public class Simulator implements Runnable {
     private static int qgcPeerPort = DEFAULT_QGC_PEER_PORT;
     private static String serialPath = DEFAULT_SERIAL_PATH;
     private static int serialBaudRate = DEFAULT_SERIAL_BAUD_RATE;
-
+    
     private static HashSet<Integer> monitorMessageIds = new HashSet<Integer>();
     private static boolean monitorMessage = false;
 
-    Visualizer3D visualizer;
-    AbstractMulticopter vehicle;
-    CameraGimbal2D gimbal;
-    MAVLinkHILSystem hilSystem;
-    MAVLinkPort autopilotMavLinkPort;
-    UDPMavLinkPort udpGCMavLinkPort;
-    ScheduledFuture<?> thisHandle;
-
+    private Visualizer3D visualizer;
+    private AbstractMulticopter vehicle;
+    private CameraGimbal2D gimbal;
+    private MAVLinkHILSystem hilSystem;
+    private MAVLinkPort autopilotMavLinkPort;
+    private UDPMavLinkPort udpGCMavLinkPort;
+    private ScheduledFuture<?> thisHandle;
     private World world;
-//    private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+//  private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
+    
     public volatile boolean shutdown = false;
 
     public Simulator() throws IOException, InterruptedException, ParserConfigurationException, SAXException {
@@ -146,16 +154,18 @@ public class Simulator implements Runnable {
         SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
 
         //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
-        simpleEnvironment.setWindDeviation(0.0);
+        //simpleEnvironment.setWindDeviation(0.0);
         simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
 
         // Set up magnetic field deviations 
         // (do this after environment already has a reference point in case we need to look up declination manually)
-        Vector3d magField = DEFAULT_MAG_FIELD;
         if (DO_MAG_FIELD_LOOKUP)
-            magField = magFieldLookup(referencePos);
-        else if (magField.y == 0.0f) {
+            simpleEnvironment.setMagField(magFieldLookup(referencePos));
+        else if (DEFAULT_MAG_INCL != 0.0 || DEFAULT_MAG_DECL != 0.0)
+            simpleEnvironment.setMagFieldByInclDecl(DEFAULT_MAG_INCL, DEFAULT_MAG_DECL);
+        else if (DEFAULT_MAG_FIELD.y == 0.0f && (DEFAULT_MAG_FIELD.x != 0.0 || DEFAULT_MAG_FIELD.z != 0.0)) {
+            Vector3d magField = DEFAULT_MAG_FIELD;
             // Set declination based on the initialization position of the Simulator
             // getMagDeclination() returns degrees and variable decl is in radians.
             double decl = Math.toRadians(world.getEnvironment().getMagDeclination(referencePos.lat, referencePos.lon));
@@ -163,8 +173,8 @@ public class Simulator implements Runnable {
             Matrix3d magDecl = new Matrix3d();
             magDecl.rotZ(decl);
             magDecl.transform(magField);
+            simpleEnvironment.setMagField(magField);
         }
-        simpleEnvironment.setMagField(magField);
 
         // Create vehicle with sensors
         vehicle = buildMulticopter();
@@ -172,7 +182,7 @@ public class Simulator implements Runnable {
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
         hilSystem = new MAVLinkHILSystem(schema, autopilotSysId, 51, vehicle);
-        hilSystem.setHeartbeatInterval(0);
+        //hilSystem.setHeartbeatInterval(0);
         connHIL.addNode(hilSystem);
         world.addObject(vehicle);
 
@@ -182,7 +192,7 @@ public class Simulator implements Runnable {
             world.addObject(gimbal);
         }
 
-        // Create 3D visualizer
+        // Create 3D visualizer (GUI)
         visualizer = new Visualizer3D(world);
         visualizer.setHilSystem(hilSystem);
         visualizer.setVehicleViewObject(vehicle);
@@ -223,9 +233,9 @@ public class Simulator implements Runnable {
                         hilSystem.endSim();
                     
                     // Close ports
-                    if (autopilotMavLinkPort != null)
+                    if (autopilotMavLinkPort != null && autopilotMavLinkPort.isOpened())
                         autopilotMavLinkPort.close();
-                    if (udpGCMavLinkPort != null)
+                    if (udpGCMavLinkPort != null && udpGCMavLinkPort.isOpened())
                         udpGCMavLinkPort.close();
                     
                     if (thisHandle != null)
@@ -250,23 +260,22 @@ public class Simulator implements Runnable {
 
     private AbstractMulticopter buildMulticopter() throws IOException {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
-        vehicle.setMass(0.25);
+        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", "default", 
+                                                        0.33 / 2, 4.0, 0.05, 0.005, gc);
+        vehicle.setMass(0.8);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
-        I.m00 = 0.0017;  // X
-        I.m11 = 0.0017;  // Y
-        I.m22 = 0.002;  // Z
+        I.m00 = 0.005;  // X
+        I.m11 = 0.005;  // Y
+        I.m22 = 0.009;  // Z
         vehicle.setMomentOfInertia(I);
         SimpleSensors sensors = new SimpleSensors();
-        sensors.setGPSInterval(50);
-        sensors.setGPSDelay(10);
-        //sensors.setGPSStartTime(-1);
-        sensors.setPressureAltOffset(world.getGlobalReference().alt);
+        sensors.setGPSDelay(200);
+        sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
         vehicle.setSensors(sensors);
-        vehicle.setDragMove(0.01);
+        vehicle.setDragMove(0.02);
         //v.setDragRotate(0.1);
-        
+
         return vehicle;
     }
 
@@ -557,8 +566,8 @@ public class Simulator implements Runnable {
         System.out.println(SPEED_STRING);
         System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency of the HIL_SENSOR messages.");
         System.out.println("      Default is " + DEFAULT_SIM_SPEED + " Hz\n");
-        System.out.println(AP_STRING);
-        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
+//        System.out.println(AP_STRING);
+//        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
         System.out.println(MAG_STRING);
         System.out.println("      Attempt automatic magnetic field inclination/declination lookup for starting position via NOAA Web service.\n");
         System.out.println(QGC_STRING);
@@ -571,19 +580,31 @@ public class Simulator implements Runnable {
         System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).\n");
         System.out.println(PRINT_INDICATION_STRING);
         System.out.println("      Monitor (echo) all/selected MAVLink messages to the console.");
-        System.out.println("      If no MsgIDs are specified, all messages are monitored.\n");
-        System.out.println("Key commands (in the visualizer window):");
+        System.out.println("      If no MsgIDs are specified, all messages are monitored.");
+        System.out.println("");
+        System.out.println("Key commands (in the visualizer window):\n");
         System.out.println(" Views:");
         System.out.println("   F - First-person camera.");
         System.out.println("   S - Stationary camera.");
         System.out.println("   G - Gimbal camera.");
+        System.out.println("");
         System.out.println(" Other:");
         System.out.println("   Q   - Disable sim on MAV.");
         System.out.println("   I   - Enable sim on MAV.");
         System.out.println("   R   - Show/hide data reports.");
         System.out.println("   T   - Pause/resume data report updates.");
-        System.out.println(" SPACE - Reset vehicle & view to start position.");
         System.out.println("  ESC  - Exit jMAVSim.");
+        System.out.println(" SPACE - Reset vehicle & view to start position.");
+        System.out.println("");
+        System.out.println(" Manipulate Vehicle:");
+        System.out.println("  ARROW KEYS      - Rotate around pitch/roll.");
+        System.out.println("  END/PG-DN       - Rotate CCW/CW around yaw.");
+        System.out.println("  SHIFT + ARROWS  - Move N/S/E/W.");
+        System.out.println("  SHIFT + INS/DEL - Move Up/Down.");
+        System.out.println("  NUMPAD 2/8/4/6  - Start/increase rotation rate around pitch/roll axis.");
+        System.out.println("  NUMPAD 1/3      - Start/increase rotation rate around yaw axis.");
+        System.out.println("  NUMPAD 5        - Stop all rotation.");
+        System.out.println("  SHIFT+ANY ABOVE - Rotate/move/increase at a higher/faster rate.");
         System.out.println("");
         //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
     }
