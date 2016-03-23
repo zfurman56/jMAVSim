@@ -17,6 +17,8 @@ public abstract class Environment extends WorldObject {
      * @return gravity vector
      */
     public abstract Vector3d getG();
+    
+    public abstract void setG(Vector3d grav);
 
     /**
      * Get magnetic field vector in specified point.

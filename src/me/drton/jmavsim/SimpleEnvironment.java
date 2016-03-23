@@ -1,16 +1,25 @@
 package me.drton.jmavsim;
 
+import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
+
 import java.util.Random;
 
 /**
  * User: ton Date: 28.11.13 Time: 22:40
  */
 public class SimpleEnvironment extends Environment implements ReportingObject {
+    public static final double Pb = 101325.0;  // static pressure at sea level [Pa]
+    public static final double Tb = 288.15;    // standard temperature at sea level [K]
+    public static final double Lb = -0.0065;   // standard temperature lapse rate [K/m]
+    public static final double M = 0.0289644;  // molar mass of Earth’s air [kg/mol]
+    public static final double G = 9.80665;    // gravity
+    public static final double R = 8.31432;    // universal gas constant
+    
     private Vector3d magField = new Vector3d(0.21523, 0.0, 0.42741);
     private Vector3d wind = new Vector3d(0.0, 0.0, 0.0);
     private double groundLevel = 0.0;
-    private Vector3d g = new Vector3d(0.0, 0.0, 9.80665);
+    private Vector3d g = new Vector3d(0.0, 0.0, G);
     private double windDeviation = 20.0;
     private double windT = 2.0;
     private Vector3d windCurrent = new Vector3d(0.0, 0.0, 0.0);
@@ -73,6 +82,13 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
         return g;
     }
 
+    public void setG(Vector3d grav) {
+        if (grav == null)
+            g = new Vector3d(0.0, 0.0, G);
+        else
+            g = grav;
+    }
+    
     @Override
     public Vector3d getMagField(Vector3d point) {
         return magField;
@@ -82,6 +98,16 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
         this.magField = magField;
         this.magIncl = (float)Math.toDegrees(Math.atan2(magField.z, magField.x));
         this.magDecl = (float)Math.toDegrees(Math.atan2(magField.y, magField.x));
+    }
+    
+    public void setMagFieldByInclDecl(double incl, double decl) {
+        decl = Math.toRadians(decl);
+        incl = Math.toRadians(incl);
+        Vector3d magField = new Vector3d(Math.cos(incl), 0.0f, Math.sin(incl));
+        Matrix3d declMtx = new Matrix3d();
+        declMtx.rotZ(decl);
+        declMtx.transform(magField);
+        setMagField(magField);
     }
 
     @Override
@@ -127,17 +153,11 @@ public class SimpleEnvironment extends Environment implements ReportingObject {
      * @return Barometric pressure in Pa
      */
     public static double alt2baro(double alt) {
-        double Pb = 101325.0;  // static pressure at sea level [Pa]
-        double Tb = 288.15;    // standard temperature at sea level [K]
-        double Lb = -0.0065;   // standard temperature lapse rate [K/m]
-        double M = 0.0289644;  // molar mass of Earth’s air [kg/mol]
-        double G = 9.80665;    // gravity
-        double R = 8.31432;    // universal gas constant
-        if (alt < 11000.0) {
+        if (alt <= 11000.0) {
             return Pb * Math.pow(Tb / (Tb + (Lb * alt)), (G * M) / (R * Lb));
         } else if (alt <= 20000.0) {
             double f = 11000.0;
-            double a = Pb * Math.pow(Tb / (Tb + (Lb * f)), (G * M) / (R * Lb));
+            double a = alt2baro(f);
             double c = Tb + (f * Lb);
             return a * Math.exp(((-G) * M * (alt - f)) / (R * c));
         }
