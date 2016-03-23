@@ -15,9 +15,9 @@ import java.nio.channels.ByteChannel;
  */
 public class SerialMAVLinkPort extends MAVLinkPort {
     private MAVLinkSchema schema;
-    private SerialPort serialPort;
+    private SerialPort serialPort = null;
     private ByteChannel channel = null;
-    private MAVLinkStream stream;
+    private MAVLinkStream stream = null;
     private boolean debug = false;
 
     // connection information
@@ -103,12 +103,16 @@ public class SerialMAVLinkPort extends MAVLinkPort {
 
     @Override
     public void close() throws IOException {
+        if (serialPort == null)
+            return;
+        
         try {
             serialPort.closePort();
         } catch (SerialPortException e) {
             throw new IOException(e);
         }
         serialPort = null;
+        stream = null;
     }
 
     @Override
@@ -118,7 +122,7 @@ public class SerialMAVLinkPort extends MAVLinkPort {
 
     @Override
     public void handleMessage(MAVLinkMessage msg) {
-        if (isOpened()) {
+        if (isOpened() && stream != null) {
             try {
                 stream.write(msg);
             } catch (Exception e) {
@@ -130,7 +134,7 @@ public class SerialMAVLinkPort extends MAVLinkPort {
     @Override
     public void update(long t) {
         MAVLinkMessage msg;
-        while (isOpened()) {
+        while (isOpened() && stream != null) {
             try {
                 msg = stream.read();
                 if (msg == null) {
