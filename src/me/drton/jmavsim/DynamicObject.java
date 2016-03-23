@@ -38,9 +38,10 @@ public abstract class DynamicObject extends KinematicObject {
     public void update(long t) {
         if (lastTime >= 0) {
             double dt = (t - lastTime) / 1000.0;
-            if (dt < 0.001) {
-                dt = 0.001; // Limit min dt to 1ms
-            }
+            double grnd = getWorld().getEnvironment().getGroundLevel(position);
+
+            dt = Math.max(dt, 0.001);
+ 
             // Position
             Vector3d dPos = new Vector3d(velocity);
             dPos.scale(dt);
@@ -48,14 +49,14 @@ public abstract class DynamicObject extends KinematicObject {
             // Velocity
             acceleration = getForce();
             acceleration.scale(1.0 / mass);
-            acceleration.add(getWorld().getEnvironment().getG());
-            if (position.z >= getWorld().getEnvironment().getGroundLevel(position) &&
-                    velocity.z + acceleration.z * dt >= 0.0) {
+            if (!ignoreGravity)
+                acceleration.add(getWorld().getEnvironment().getG());
+            if (position.z >= grnd && velocity.z + acceleration.z * dt >= 0.0) {
                 // On ground
                 acceleration.x = -velocity.x / dt;
                 acceleration.y = -velocity.y / dt;
                 acceleration.z = -velocity.z / dt;
-                position.z = getWorld().getEnvironment().getGroundLevel(position);
+                position.z = grnd;
                 rotationRate.set(0.0, 0.0, 0.0);
             }
             Vector3d dVel = new Vector3d(acceleration);

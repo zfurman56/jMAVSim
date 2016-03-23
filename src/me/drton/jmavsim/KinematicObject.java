@@ -19,6 +19,7 @@ import java.net.URL;
  * These parameters may be set directly for objects moving by fixed trajectory or simulated from external forces (see DynamicObject).
  */
 public abstract class KinematicObject extends WorldObject {
+    protected boolean ignoreGravity = false;
     protected Vector3d position = new Vector3d();
     protected Vector3d velocity = new Vector3d();
     protected Vector3d acceleration = new Vector3d();
@@ -47,13 +48,13 @@ public abstract class KinematicObject extends WorldObject {
      * @throws java.io.FileNotFoundException
      */
     protected void modelFromFile(String modelFile) throws FileNotFoundException {
-	URL file = null;
-	try {
-	    file = new URL("file:./" + modelFile);
-	} catch (MalformedURLException e) {
-	    System.err.println(e);
-	    System.exit(1);
-	}
+        URL file = null;
+        try {
+            file = new URL("file:./" + modelFile);
+        } catch (MalformedURLException e) {
+            System.err.println(e);
+            System.exit(1);
+        }
         ObjectFile objectFile = new ObjectFile();
         Scene scene = objectFile.load(file);
         transformGroup.addChild(scene.getSceneGroup());
@@ -69,26 +70,50 @@ public abstract class KinematicObject extends WorldObject {
         transformGroup.setTransform(transform);
     }
 
+    public void setIgnoreGravity(boolean ignoreGravity) {
+        this.ignoreGravity = ignoreGravity;
+    }
+
     public Vector3d getPosition() {
         return position;
+    }
+
+    public void setPosition(Vector3d position) {
+        this.position = position;
     }
 
     public Vector3d getVelocity() {
         return velocity;
     }
 
+    public void setVelocity(Vector3d vel) {
+        this.velocity = vel;
+    }
+
     public Vector3d getAcceleration() {
         return acceleration;
+    }
+
+    public void setAcceleration(Vector3d acc) {
+        this.acceleration = acc;
     }
 
     public Matrix3d getRotation() {
         return rotation;
     }
 
+    public void setRotation(Matrix3d rotation) {
+        this.rotation = rotation;
+    }
+
     public Vector3d getRotationRate() {
         return rotationRate;
     }
-    
+
+    public void setRotationRate(Vector3d rate) {
+        this.rotationRate = rate;
+    }
+
     public void resetObjectParameters() {
         position = new Vector3d();
         velocity = new Vector3d();

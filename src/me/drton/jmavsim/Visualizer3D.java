@@ -10,17 +10,22 @@ import javax.vecmath.*;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.BitSet;
 import java.util.Enumeration;
 
 /**
  * 3D Visualizer, works in own thread, synchronized with "world" thread.
  */
 public class Visualizer3D extends JFrame {
+    private static final long serialVersionUID = 1L;
+    private static final int KEYCHECK_INTERVAL = 50;  // [ms]
+
     public static enum ViewTypes { VIEW_STATIC, VIEW_FPV, VIEW_GIMBAL }
     
     private static Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
     private final World world;
     private boolean reportPaused = false;
+    private long nextKeycheck = 0L;
     private SimpleUniverse universe;
     private BoundingSphere sceneBounds = new BoundingSphere(new Point3d(0, 0, 0), 1000000.0);
     private Vector3d viewerPosition = new Vector3d(0.0, 0.0, 0.0);
@@ -220,9 +225,7 @@ public class Visualizer3D extends JFrame {
         Background bg = new Background();
         bg.setApplicationBounds(bounds);
         BranchGroup backGeoBranch = new BranchGroup();
-        Sphere skySphere = new Sphere(1.0f,
-                Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD | Sphere.GENERATE_TEXTURE_COORDS, 32);
-        //        Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD | Sphere.GENERATE_TEXTURE_COORDS, 32);
+        Sphere skySphere = new Sphere(1.0f, Sphere.GENERATE_NORMALS | Sphere.GENERATE_NORMALS_INWARD | Sphere.GENERATE_TEXTURE_COORDS, 32);
         Texture texSky = new TextureLoader("environment/sky.jpg", null).getTexture();
         skySphere.getAppearance().setTexture(texSky);
         Transform3D transformSky = new Transform3D();
@@ -273,7 +276,7 @@ public class Visualizer3D extends JFrame {
     }
 
     private void updateVisualizer() {
-        synchronized (world) { // Synchronize with "world" thread
+//        synchronized (world) { // Synchronize with "world" thread
             // Update branch groups of all kinematic objects
             for (WorldObject object : world.getObjects()) {
                 if (object instanceof KinematicObject) {
@@ -321,9 +324,46 @@ public class Visualizer3D extends JFrame {
                 viewerTransform.setRotation(mat);
             }
             viewerTransformGroup.setTransform(viewerTransform);
+//        }
+        if (System.currentTimeMillis() > nextKeycheck) {
+            nextKeycheck = System.currentTimeMillis() + KEYCHECK_INTERVAL;
+            keyHandler.checkCumulativeKeys();
         }
     }
 
+    private void rotateObject(KinematicObject obj, Vector3f vec, float deg) {
+        Matrix3d rot = obj.getRotation();
+        Matrix3d r = new Matrix3d();
+        AxisAngle4f aa = new AxisAngle4f(vec, (float)Math.toRadians(deg));
+        r.set(aa);
+        rot.mulNormalize(r);
+        obj.setRotation(rot);
+    }
+    
+    private void moveObject(KinematicObject obj, Vector3f vec) {
+        Vector3d pos = obj.getPosition();
+        pos.add(new Vector3d(vec));
+        obj.setIgnoreGravity(pos.z < 0.0);
+//        if (pos.z >= 0.0)
+//            //world.getEnvironment().setG(null);
+//        else
+//            world.getEnvironment().setG(new Vector3d());
+        obj.setPosition(pos);
+    }
+
+    private void rotationRateObject(KinematicObject obj, Vector3f vec) {
+        if (vec == null)
+            obj.setRotationRate(new Vector3d());
+        else {
+            // if still on ground, move it up so it can rotate
+            if (obj.getPosition().z >= 0)
+                moveObject(obj, new Vector3f(0f, 0f, -2.0f));
+            Vector3d rot = obj.getRotationRate();
+            rot.add(new Vector3d(vec));
+            obj.setRotationRate(rot);
+        }
+    }
+    
     class UpdateBehavior extends Behavior {
         private WakeupCondition condition = new WakeupOnElapsedFrames(0, false);
 
@@ -349,9 +389,11 @@ public class Visualizer3D extends JFrame {
     /////// KeyboardHandler ///////
     
     public class KeyboardHandler extends KeyAdapter {
+        public BitSet keyBits = new BitSet(256);
 
         @Override
         public void keyReleased(KeyEvent e) {
+            keyBits.clear(e.getKeyCode());
             
             switch (e.getKeyCode()) {
             
@@ -404,11 +446,67 @@ public class Visualizer3D extends JFrame {
             
         }
 
-//      @Override
-//      public void keyPressed(KeyEvent e) {
-//          keyString = "key code = " + e.getKeyCode() + " (" + KeyEvent.getKeyText(e.getKeyCode()) + ")";
-//          setReportText(keyString);
-//      }
+        @Override
+        public void keyPressed(KeyEvent e) {
+            keyBits.set(e.getKeyCode());
+            
+//            checkCumulativeKeys();
 
+            Vector3f dir = new Vector3f(0f, 0f, 0f);
+            float m = keyHandler.keyBits.get(KeyEvent.VK_CONTROL) ? 1.0f : 0.5f;
+
+            if (!keyBits.get(KeyEvent.VK_NUMPAD5)) {
+                if (keyBits.get(KeyEvent.VK_NUMPAD4))
+                    dir.setX(-m);
+                if (keyBits.get(KeyEvent.VK_NUMPAD6))
+                    dir.setX(m);
+                if (keyBits.get(KeyEvent.VK_NUMPAD8))
+                    dir.setY(-m);
+                if (keyBits.get(KeyEvent.VK_NUMPAD2))
+                    dir.setY(m);
+                if (keyBits.get(KeyEvent.VK_NUMPAD1))
+                    dir.setZ(-m);
+                if (keyBits.get(KeyEvent.VK_NUMPAD3))
+                    dir.setZ(m);
+            }
+            if (dir.length() != 0.0)
+                rotationRateObject(vehicleViewObject, dir);
+            else if (keyBits.get(KeyEvent.VK_NUMPAD5))
+                rotationRateObject(vehicleViewObject, null);
+         
+        }
+
+        public void checkCumulativeKeys() {
+            Vector3f dir = new Vector3f(0f, 0f, 0f);
+            float deg = keyBits.get(KeyEvent.VK_CONTROL) ? 5.0f : 1.0f;
+            float m = keyBits.get(KeyEvent.VK_SHIFT) ? deg / 5.0f : 1.0f;
+
+            if (keyBits.get(KeyEvent.VK_LEFT) || keyBits.get(KeyEvent.VK_KP_LEFT))
+                dir.setX(-m);
+
+            if (keyBits.get(KeyEvent.VK_RIGHT) || keyBits.get(KeyEvent.VK_KP_RIGHT))
+                dir.setX(m);
+
+            if (keyBits.get(KeyEvent.VK_UP) || keyBits.get(KeyEvent.VK_KP_UP))
+                dir.setY(-m);
+
+            if (keyBits.get(KeyEvent.VK_DOWN) || keyBits.get(KeyEvent.VK_KP_DOWN))
+                dir.setY(m);
+
+            if (keyBits.get(KeyEvent.VK_END) || keyBits.get(KeyEvent.VK_INSERT))
+                dir.setZ(-m);
+
+            if (keyBits.get(KeyEvent.VK_PAGE_DOWN) || keyBits.get(KeyEvent.VK_DELETE))
+                dir.setZ(m);
+
+            if (dir.length() != 0.0) {
+                if (keyBits.get(KeyEvent.VK_SHIFT)) {
+                    dir.set(-dir.y, dir.x, dir.z);
+                    moveObject(vehicleViewObject, dir);
+                } else
+                    rotateObject(vehicleViewObject, dir, deg);
+            }
+        }
+        
     }
 }
