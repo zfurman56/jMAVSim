@@ -12,7 +12,7 @@ import java.io.FileNotFoundException;
  * Abstract multicopter class. Does all necessary calculations for multirotor with any placement of rotors.
  * Only rotors on one plane supported now.
  */
-public abstract class AbstractMulticopter extends AbstractVehicle implements ReportingObject {
+public abstract class AbstractMulticopter extends AbstractVehicle {
     private double dragMove = 0.0;
     private double dragRotate = 0.0;
     protected Rotor[] rotors;
@@ -26,24 +26,7 @@ public abstract class AbstractMulticopter extends AbstractVehicle implements Rep
     }
 
     public void report(StringBuilder builder) {
-        builder.append("VEHICLE");
-        builder.append(newLine);
-        builder.append("===========");
-        builder.append(newLine);
-        builder.append(newLine);
-
-        builder.append("Position:\n");
-        builder.append(newLine);
-        if (sensors.getGNSS() != null) {
-            builder.append(String.format("  Lat: %.8f;\n  Lon: %.8f\n  Alt: %.3f", sensors.getGNSS().position.lat, sensors.getGNSS().position.lat, sensors.getGNSS().position.alt));
-            builder.append(newLine);
-        }
-        builder.append(String.format("  Baro Alt: %.3f;\n  Pa: %.2f", sensors.getPressureAlt(), sensors.getPressure()));
-        builder.append(newLine);
-        builder.append(String.format("  X: %.5f Y: %.5f Z: %.5f", position.x, position.y, position.z));
-        builder.append(newLine);
-        builder.append(newLine);
-        
+        super.report(builder);
         builder.append("MULTICOPTER");
         builder.append(newLine);
         builder.append("===========");
