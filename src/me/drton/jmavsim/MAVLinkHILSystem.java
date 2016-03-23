@@ -59,7 +59,6 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
             if (gotHeartBeat && !inited && t > initTime) {
                 System.out.println("Init MAVLink");
                 initMavLink();
-                inited = true;
             }
             if ((msg.getInt("base_mode") & 128) == 0) {
                 vehicle.setControl(Collections.<Double>emptyList());
@@ -78,10 +77,13 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         if (vehicle.getSensors().getGPSStartTime() == -1)
             vehicle.getSensors().setGPSStartTime(System.currentTimeMillis() + 1000);
         stopped = false;
+        inited = true;
     }
     
     public void endSim() {
-        // Set HIL mode
+        if (!inited)
+            return;
+        // Send message to end HIL mode
         MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
         msg.set("target_system", sysId);
         msg.set("base_mode", 0);     // disarmed
@@ -119,6 +121,10 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         msg_sensor.set("zmag", tv.z);
         msg_sensor.set("pressure_alt", sensors.getPressureAlt());
         msg_sensor.set("abs_pressure", sensors.getPressure() * 0.01);  // Pa to millibar
+        if (sensors.isReset()) {
+            msg_sensor.set("fields_updated", (1<<31));
+            sensors.setReset(false);
+        }
         sendMessage(msg_sensor);
 
         // GPS

@@ -21,6 +21,10 @@ public interface Sensors {
     GNSSReport getGNSS();
 
     boolean isGPSUpdated();
+    
+    boolean isReset();
+    
+    void setReset(boolean reset);
 
     void setGPSStartTime(long time);
     

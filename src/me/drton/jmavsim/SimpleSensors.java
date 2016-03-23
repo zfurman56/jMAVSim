@@ -18,11 +18,12 @@ public class SimpleSensors implements Sensors {
     private long gpsNext = 0;
     private GNSSReport gps = new GNSSReport();
     private boolean gpsUpdated = false;
+    private boolean reset = false;
     private double pressureAltOffset = 0.0;
     private float ephHigh = 100.0f;  // starting GPS horizontal estimation accuracy
-    private float ephLow = 0.1f;     // final GPS horizontal estimation accuracy
+    private float ephLow = 0.3f;     // final GPS horizontal estimation accuracy
     private float epvHigh = 100.0f;  // starting GPS vertical estimation accuracy
-    private float epvLow = 0.2f;     // final GPS vertical estimation accuracy
+    private float epvLow = 0.4f;     // final GPS vertical estimation accuracy
     private float fix3Deph = 3.0f;   // maximum h-acc for a "3D" fix
     private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
     // accuracy smoothing filters, slowly improve h/v accuracy after startup
@@ -91,6 +92,14 @@ public class SimpleSensors implements Sensors {
         this.pressureAltOffset = pressureAltOffset;
     }
 
+    public boolean isReset() {
+        return reset;
+    }
+
+    public void setReset(boolean reset) {
+        this.reset = reset;
+    }
+
     @Override
     public Vector3d getAcc() {
         Vector3d accBody = new Vector3d(object.getAcceleration());
@@ -113,6 +122,7 @@ public class SimpleSensors implements Sensors {
         Matrix3d rot = new Matrix3d(object.getRotation());
         rot.transpose();
         rot.transform(mag);
+        mag.scale(2.0);
         return addZeroMeanNoise(mag, 0.005);
     }
 
@@ -149,6 +159,8 @@ public class SimpleSensors implements Sensors {
             Vector3d pos = object.getPosition();
             eph = (float)ephFilter.filter(ephLow);
             epv = (float)epvFilter.filter(epvLow);
+//            eph = 0.4f;
+//            epv = 0.5f;
             
             gpsCurrent.position = globalProjector.reproject(new double[]{pos.x, pos.y, pos.z});
             gpsCurrent.eph = eph;
