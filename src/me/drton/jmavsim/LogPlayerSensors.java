@@ -24,6 +24,7 @@ public class LogPlayerSensors implements Sensors {
     private double baroAlt;
     private GNSSReport gnss = new GNSSReport();
     private boolean gpsUpdated = false;
+    private boolean reset = false;
 
     void openLog(String fileName, long startTime) throws IOException, FormatErrorException {
         logReader = new PX4LogReader(fileName);
@@ -134,5 +135,16 @@ public class LogPlayerSensors implements Sensors {
             }
         }
     }
+
+    @Override
+    public boolean isReset() {
+        return reset;
+    }
+
+    @Override
+    public void setReset(boolean reset) {
+        this.reset = reset;
+    }
+
 
 }
