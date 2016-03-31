@@ -13,6 +13,12 @@ public abstract class DynamicObject extends KinematicObject {
     protected double mass = 1.0;
     protected Matrix3d momentOfInertia = new Matrix3d();
     protected Matrix3d momentOfInertiaInv = new Matrix3d();
+    
+    // temp storage objects for calculations
+    private Vector3d tmpVec = new Vector3d();
+    private Vector3d angularAcc = new Vector3d();
+    private Matrix3d rotMtx = new Matrix3d();
+    private AxisAngle4d rotAng = new AxisAngle4d();
 
     public DynamicObject(World world) {
         super(world);
@@ -37,15 +43,13 @@ public abstract class DynamicObject extends KinematicObject {
     @Override
     public void update(long t) {
         if (lastTime >= 0) {
-            double dt = (t - lastTime) / 1000.0;
-            double grnd = getWorld().getEnvironment().getGroundLevel(position);
-
-            dt = Math.max(dt, 0.001);
+            double dt = Math.max((t - lastTime) / 1000.0, 0.001);  // constrain time step
+            double grnd = getWorld().getEnvironment().getGroundLevelAt(position);
  
             // Position
-            Vector3d dPos = new Vector3d(velocity);
-            dPos.scale(dt);
-            position.add(dPos);
+            tmpVec.set(velocity);
+            tmpVec.scale(dt);
+            position.add(tmpVec);
             // Velocity
             acceleration = getForce();
             acceleration.scale(1.0 / mass);
@@ -53,38 +57,41 @@ public abstract class DynamicObject extends KinematicObject {
                 acceleration.add(getWorld().getEnvironment().getG());
             if (position.z >= grnd && velocity.z + acceleration.z * dt >= 0.0) {
                 // On ground
-                acceleration.x = -velocity.x / dt;
-                acceleration.y = -velocity.y / dt;
-                acceleration.z = -velocity.z / dt;
+//                acceleration.x = -velocity.x / dt;
+//                acceleration.y = -velocity.y / dt;
+//                acceleration.z = -velocity.z / dt;
                 position.z = grnd;
+                acceleration.set(0.0, 0.0, 0.0);
+                velocity.set(0.0, 0.0, 0.0);
                 rotationRate.set(0.0, 0.0, 0.0);
+            } else {
+                tmpVec.set(acceleration);
+                tmpVec.scale(dt);
+                velocity.add(tmpVec);
+                // Rotation
+                if (rotationRate.length() > 0.0) {
+                    tmpVec.set(rotationRate);
+                    tmpVec.normalize();
+                    rotAng.set(tmpVec, rotationRate.length() * dt);
+                    rotMtx.set(rotAng);
+                    rotation.mulNormalize(rotMtx);
+                }
+                // Rotation rate
+                tmpVec.set(rotationRate);
+                momentOfInertia.transform(tmpVec);
+                angularAcc.cross(rotationRate, tmpVec);
+                angularAcc.negate();
+                angularAcc.add(getTorque());
+                momentOfInertiaInv.transform(angularAcc);
+                angularAcc.scale(dt);
+                rotationRate.add(angularAcc);
             }
-            Vector3d dVel = new Vector3d(acceleration);
-            dVel.scale(dt);
-            velocity.add(dVel);
-            // Rotation
-            if (rotationRate.length() > 0.0) {
-                Matrix3d r = new Matrix3d();
-                Vector3d rotationAxis = new Vector3d(rotationRate);
-                rotationAxis.normalize();
-                r.set(new AxisAngle4d(rotationAxis, rotationRate.length() * dt));
-                rotation.mulNormalize(r);
-            }
-            // Rotation rate
-            Vector3d Iw = new Vector3d(rotationRate);
-            momentOfInertia.transform(Iw);
-            Vector3d angularAcc = new Vector3d();
-            angularAcc.cross(rotationRate, Iw);
-            angularAcc.negate();
-            angularAcc.add(getTorque());
-            momentOfInertiaInv.transform(angularAcc);
-            angularAcc.scale(dt);
-            rotationRate.add(angularAcc);
+            attitude.set(utilMatrixToEulers(rotation));
         }
         lastTime = t;
     }
 
     protected abstract Vector3d getForce();
-
     protected abstract Vector3d getTorque();
+    protected abstract Vector3d getAirFlowForce(Vector3d airSpeed);
 }
