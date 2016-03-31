@@ -2,8 +2,11 @@ package me.drton.jmavsim;
 
 import com.sun.j3d.loaders.Scene;
 import com.sun.j3d.loaders.objectfile.ObjectFile;
+//import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 
+//import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
+//import javax.media.j3d.Shape3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.Matrix3d;
@@ -20,20 +23,23 @@ import java.net.URL;
  */
 public abstract class KinematicObject extends WorldObject {
     protected boolean ignoreGravity = false;
+    protected boolean ignoreWind = false;
     protected Vector3d position = new Vector3d();
     protected Vector3d velocity = new Vector3d();
     protected Vector3d acceleration = new Vector3d();
     protected Matrix3d rotation = new Matrix3d();
     protected Vector3d rotationRate = new Vector3d();
+    protected Vector3d attitude = new Vector3d();
 
-    private Transform3D transform;
+    protected Transform3D transform;
     protected TransformGroup transformGroup;
-    private BranchGroup branchGroup;
+    protected BranchGroup branchGroup;
 
     public KinematicObject(World world) {
         super(world);
         rotation.setIdentity();
         transformGroup = new TransformGroup();
+        transformGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
         transformGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         transform = new Transform3D();
         transformGroup.setTransform(transform);
@@ -57,7 +63,21 @@ public abstract class KinematicObject extends WorldObject {
         }
         ObjectFile objectFile = new ObjectFile();
         Scene scene = objectFile.load(file);
-        transformGroup.addChild(scene.getSceneGroup());
+        
+        BranchGroup bg = scene.getSceneGroup();
+        
+//        Shape3D shape = (Shape3D)bg.getChild(0);
+//        shape.setPickable(true);
+//        TransformGroup objRotate = new TransformGroup();
+//        objRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+//        objRotate.addChild(bg);
+//        MouseRotate f1=new MouseRotate();
+//        f1.setSchedulingBounds(new BoundingSphere());
+//        f1.setTransformGroup(objRotate);
+//        bg.addChild(f1);
+//        transformGroup.addChild(objRotate);
+
+        transformGroup.addChild(bg);
     }
 
     public BranchGroup getBranchGroup() {
@@ -72,6 +92,14 @@ public abstract class KinematicObject extends WorldObject {
 
     public void setIgnoreGravity(boolean ignoreGravity) {
         this.ignoreGravity = ignoreGravity;
+    }
+
+    public boolean isIgnoreWind() {
+        return ignoreWind;
+    }
+
+    public void setIgnoreWind(boolean ignoreWind) {
+        this.ignoreWind = ignoreWind;
     }
 
     public Vector3d getPosition() {
@@ -122,5 +150,14 @@ public abstract class KinematicObject extends WorldObject {
         rotationRate = new Vector3d();
         
         rotation.rotX(0);
+    }
+    
+    public static Vector3d utilMatrixToEulers(Matrix3d m) {
+        Vector3d tv = new Vector3d();
+        tv.y = Math.atan2(m.m21, m.m22);
+        tv.z = Math.atan2(m.m10, m.m00);
+        if (Math.abs(Math.cos(tv.y)) > 0.002)
+            tv.x = Math.atan2(-m.m20, Math.sqrt(m.m21 * m.m21 + m.m22 * m.m22));
+        return tv;
     }
 }
