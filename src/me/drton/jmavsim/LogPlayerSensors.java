@@ -23,6 +23,7 @@ public class LogPlayerSensors implements Sensors {
     private Vector3d mag = new Vector3d();
     private double baroAlt;
     private GNSSReport gnss = new GNSSReport();
+    private LatLonAlt globalPosition = new LatLonAlt(0, 0, 0);
     private boolean gpsUpdated = false;
     private boolean reset = false;
 
@@ -73,6 +74,11 @@ public class LogPlayerSensors implements Sensors {
         return gnss;
     }
 
+    @Override
+    public LatLonAlt getGlobalPosition() {
+        return globalPosition;
+    }
+    
     @Override
     public boolean isGPSUpdated() {
         boolean res = gpsUpdated;
@@ -132,6 +138,8 @@ public class LogPlayerSensors implements Sensors {
                         ((Number) logData.get("GPS.VelD")).doubleValue());
                 gnss.fix = (Integer) logData.get("GPS.Fix");
                 gnss.time = (Long) logData.get("GPS.GPSTime");
+                
+                globalPosition = gnss.position;
             }
         }
     }

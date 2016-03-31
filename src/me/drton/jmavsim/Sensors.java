@@ -2,6 +2,8 @@ package me.drton.jmavsim;
 
 import javax.vecmath.Vector3d;
 
+import me.drton.jmavlib.geo.LatLonAlt;
+
 /**
  * User: ton Date: 26.11.13 Time: 13:32
  */
@@ -19,6 +21,8 @@ public interface Sensors {
     double getPressure();
 
     GNSSReport getGNSS();
+    
+    LatLonAlt getGlobalPosition();
 
     boolean isGPSUpdated();
     
@@ -31,4 +35,5 @@ public interface Sensors {
     long getGPSStartTime();
     
     void update(long t);
+
 }
