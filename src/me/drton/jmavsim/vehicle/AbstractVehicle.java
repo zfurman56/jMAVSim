@@ -1,5 +1,6 @@
 package me.drton.jmavsim.vehicle;
 
+import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavsim.DynamicObject;
 import me.drton.jmavsim.ReportUtil;
 import me.drton.jmavsim.ReportingObject;
@@ -25,66 +26,78 @@ public abstract class AbstractVehicle extends DynamicObject implements Reporting
     public AbstractVehicle(World world, String modelName) throws FileNotFoundException {
         super(world);
         modelFromFile(modelName);
-        position.set(0.0, 0.0, world.getEnvironment().getGroundLevel(new Vector3d(0.0, 0.0, 0.0)));
+        resetObjectParameters();
     }
 
     public void report(StringBuilder builder) {
-        Vector3d tv;
+        Vector3d tv = new Vector3d();
         builder.append("VEHICLE");
         builder.append(newLine);
         builder.append("===========");
-        builder.append(newLine+newLine);
+        builder.append(newLine);
 
-        builder.append("Attitude:");
-        builder.append(newLine+newLine);
+        builder.append("Pos: ");
+        builder.append(ReportUtil.vector2str(position));
+//        builder.append(String.format("  X: %.5f Y: %.5f Z: %.5f", position.x, position.y, position.z));
+        builder.append(newLine);
+
+        builder.append("Vel: ");
+        builder.append(ReportUtil.vector2str(velocity));
+        builder.append(newLine);
+
+        builder.append("Acc: ");
+        builder.append(ReportUtil.vector2str(acceleration));
+        builder.append(newLine);
+
+        builder.append("Rot: ");
+        builder.append(ReportUtil.vector2str(rotationRate));
+        builder.append(newLine);
+
+        builder.append("Att: ");
+        builder.append(ReportUtil.vector2str(ReportUtil.vectRad2Deg(attitude)));
+        builder.append(newLine);
+        builder.append(newLine);
+        
         if (sensors != null) {
-            tv = sensors.getAcc();
-            builder.append(String.format("ACC X: %.5f Y: %.5f Z: %.5f", tv.x, tv.y, tv.z));
+            builder.append("SENSORS");
             builder.append(newLine);
-            builder.append(String.format("    Magnitude: %.5f", Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z)));
-            builder.append(newLine);
-            builder.append(String.format("    Pitch: %.5f; Roll: %.5f", Math.toDegrees(Math.atan2(tv.x, -tv.z)), Math.toDegrees(Math.atan2(-tv.y, -tv.z))));
-            builder.append(newLine);
-
-            tv = sensors.getGyro();
-            builder.append(String.format("GYO X: %.5f Y: %.5f Z: %.5f", tv.x, tv.y, tv.z));
+            builder.append("--------");
             builder.append(newLine);
             
+            tv = sensors.getAcc();
+            builder.append("ACC: ");
+            builder.append(ReportUtil.vector2str(tv));
+            builder.append(newLine);
+            builder.append(String.format("    Magnitude: %s;", ReportUtil.d2str(Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z))));
+            builder.append(newLine);
+            builder.append(String.format("    P: %s; R: %s", ReportUtil.d2str(Math.toDegrees(Math.atan2(tv.x, -tv.z))), ReportUtil.d2str(Math.toDegrees(Math.atan2(-tv.y, -tv.z)))));
+            builder.append(newLine+newLine);
+
+            tv = sensors.getGyro();
+            builder.append("GYO: ");
+            builder.append(ReportUtil.vector2str(tv));
+            builder.append(newLine);
+            builder.append(String.format("    Magnitude: %s;", ReportUtil.d2str(Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z))));
+            builder.append(newLine+newLine);
+            
             tv = sensors.getMag();
-            builder.append(String.format("MAG X: %.5f Y: %.5f Z: %.5f", tv.x, tv.y, tv.z));
+            builder.append("MAG: ");
+            builder.append(ReportUtil.vector2str(tv));
             builder.append(newLine);
-            builder.append(String.format("    Magnitude: %.5f", Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z)));
-            builder.append(newLine);
+            builder.append(String.format("    Magnitude: %s;", ReportUtil.d2str(Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z))));
+            builder.append(newLine+newLine);
 
+            LatLonAlt pos;
+            if (sensors.getGNSS() != null && sensors.getGNSS().position != null) 
+                pos = sensors.getGNSS().position;
+            else
+                pos = sensors.getGlobalPosition();
+            builder.append(String.format("GPS Lat: %+013.8f;\n    Lon: %+013.8f\n    Alt: %07.3f", pos.lat, pos.lon, pos.alt));
             builder.append(newLine);
+            builder.append(String.format("Baro Alt: %07.3f; Pa: %08.2f", sensors.getPressureAlt(), sensors.getPressure()));
+            builder.append(newLine+newLine);
         }
         
-        builder.append("Position:");
-        builder.append(newLine+newLine);
-        if (sensors != null) {
-            if (sensors.getGNSS() != null && sensors.getGNSS().position != null) {
-                builder.append(String.format("  Lat: %.8f;\n  Lon: %.8f\n  Alt: %.3f", sensors.getGNSS().position.lat, sensors.getGNSS().position.lat, sensors.getGNSS().position.alt));
-                builder.append(newLine);
-            }
-            builder.append(String.format("  Baro Alt: %.3f;\n  Pa: %.2f", sensors.getPressureAlt(), sensors.getPressure()));
-            builder.append(newLine);
-        }
-        builder.append(String.format("  X: %.5f Y: %.5f Z: %.5f", position.x, position.y, position.z));
-        builder.append(newLine+newLine);
-
-        builder.append("Velocity: ");
-        builder.append(ReportUtil.toShortString(velocity));
-        builder.append(newLine);
-        
-        builder.append("Acceleration: ");
-        builder.append(ReportUtil.toShortString(acceleration));
-        builder.append(newLine);
-
-        builder.append("Rotation Rate: ");
-        builder.append(ReportUtil.toShortString(rotationRate));
-        builder.append(newLine);
-
-        builder.append(newLine);
     }
 
     public void setControl(List<Double> control) {
@@ -112,6 +125,7 @@ public abstract class AbstractVehicle extends DynamicObject implements Reporting
     @Override
     public void resetObjectParameters() {
         super.resetObjectParameters();
+        position.set(0.0, 0.0, 0.0);
         if (sensors != null)
             sensors.setReset(true);
     }
