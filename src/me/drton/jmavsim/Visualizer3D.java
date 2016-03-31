@@ -55,6 +55,7 @@ public class Visualizer3D extends JFrame {
     private Transform3D viewerTransform = new Transform3D();
     private SimpleUniverse universe;
     private View view;
+    private Canvas3D canvas;
     private BoundingSphere sceneBounds;
     private TransformGroup viewerTransformGroup;
     private KinematicObject viewerTargetObject;
@@ -99,7 +100,6 @@ public class Visualizer3D extends JFrame {
 
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
-        Canvas3D canvas;
         if (showOverlay)
             canvas = new CustomCanvas3D(gc, overlaySize);
         else
@@ -412,6 +412,8 @@ public class Visualizer3D extends JFrame {
      */
     public void setAAEnabled(boolean enable) {
         view.setSceneAntialiasingEnable(enable);
+        if (showOverlay)
+            ((CustomCanvas3D)canvas).setAA(enable);
     }
 
     
@@ -651,17 +653,7 @@ public class Visualizer3D extends JFrame {
             super(gc);
             g2d = this.getGraphics2D();
             
-            if (AA_ENABLED) {
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-            } else {
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
-                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            }
+            setAA(AA_ENABLED);
             
             overlaySize[0] = overlayWidth;
             overlaySize[1] = overlayWidth + 45;
@@ -683,6 +675,21 @@ public class Visualizer3D extends JFrame {
             crsLine = new Line2D.Float(0, 0, 0, halfW * -0.425f);
             windLine = new Line2D.Float(0, 0, 0, halfW * -0.425f);
        
+        }
+        
+        public void setAA(boolean on) 
+        {
+            if (on) {
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            } else {
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            }
         }
         
         // we draw the HUD/overlay here

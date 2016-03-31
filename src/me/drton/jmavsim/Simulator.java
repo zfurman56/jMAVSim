@@ -35,6 +35,7 @@ public class Simulator implements Runnable {
     public static boolean DO_MAG_FIELD_LOOKUP = false;
     public static boolean SHOW_REPORT_PANEL = false;
     public static boolean GUI_START_MAXIMIZED = false;
+    public static boolean GUI_ENABLE_AA = true;  // anti-alias on 3D scene
     public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_FPV;
     
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
@@ -46,6 +47,8 @@ public class Simulator implements Runnable {
     public static final String DEFAULT_SERIAL_PATH = "/dev/tty.usbmodem1";
     public static final int    DEFAULT_SERIAL_BAUD_RATE = 230400;
     public static final String LOCAL_HOST = "127.0.0.1";
+    public static final String DEFAULT_VEHICLE_MODEL = "models/3dr_arducopter_quad_x.obj";
+    public static final String DEFAULT_GIMBAL_MODEL = "models/gimbal.png";  // blank for invisible gimbal
 
     // Set global reference point
     // Zurich Irchel Park: 47.397742, 8.545594, 488m
@@ -154,8 +157,8 @@ public class Simulator implements Runnable {
         SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
 
         //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
-        //simpleEnvironment.setWindDeviation(0.0);
-        simpleEnvironment.setGroundLevel(0.0f);
+        simpleEnvironment.setWindDeviation(new Vector3d(6.0, 8.0, 0.00));
+        //simpleEnvironment.setGroundLevel(0.0f);
         world.addObject(simpleEnvironment);
 
         // Set up magnetic field deviations 
@@ -168,7 +171,7 @@ public class Simulator implements Runnable {
             Vector3d magField = DEFAULT_MAG_FIELD;
             // Set declination based on the initialization position of the Simulator
             // getMagDeclination() returns degrees and variable decl is in radians.
-            double decl = Math.toRadians(world.getEnvironment().getMagDeclination(referencePos.lat, referencePos.lon));
+            double decl = Math.toRadians(simpleEnvironment.getMagDeclination(referencePos.lat, referencePos.lon));
             //System.out.println("Declination: " + (Math.toDegrees(decl)));
             Matrix3d magDecl = new Matrix3d();
             magDecl.rotZ(decl);
@@ -177,7 +180,10 @@ public class Simulator implements Runnable {
         }
 
         // Create vehicle with sensors
-        vehicle = buildMulticopter();
+        if (autopilotType == "aq")
+            vehicle = buildAQ_leora();
+        else
+            vehicle = buildMulticopter();
 
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
@@ -191,9 +197,10 @@ public class Simulator implements Runnable {
             gimbal = buildGimbal();
             world.addObject(gimbal);
         }
-
+        
         // Create 3D visualizer (GUI)
         visualizer = new Visualizer3D(world);
+        visualizer.setAAEnabled(GUI_ENABLE_AA);
         visualizer.setHilSystem(hilSystem);
         visualizer.setVehicleViewObject(vehicle);
         if (gimbal != null)
@@ -260,7 +267,7 @@ public class Simulator implements Runnable {
 
     private AbstractMulticopter buildMulticopter() throws IOException {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, "models/3dr_arducopter_quad_x.obj", "x", "default", 
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "default", 
                                                         0.33 / 2, 4.0, 0.05, 0.005, gc);
         vehicle.setMass(0.8);
         Matrix3d I = new Matrix3d();
@@ -272,15 +279,50 @@ public class Simulator implements Runnable {
         SimpleSensors sensors = new SimpleSensors();
         sensors.setGPSDelay(200);
         sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
+        sensors.setNoise_Acc(0.05f);
+        sensors.setNoise_Gyo(0.01f);
+        sensors.setNoise_Mag(0.005f);
+        sensors.setNoise_Prs(0.0f);
         vehicle.setSensors(sensors);
         vehicle.setDragMove(0.02);
         //v.setDragRotate(0.1);
-
+        
         return vehicle;
     }
 
-    private CameraGimbal2D buildGimbal() {
-        CameraGimbal2D g = new CameraGimbal2D(world);
+    // 200mm, 250g small quad X "Leora" with AutoQuad style layout (clockwise from front)
+    private AbstractMulticopter buildAQ_leora() throws IOException {
+        Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
+        
+        Matrix3d I = new Matrix3d();
+        // Moments of inertia
+        I.m00 = 0.0017;  // X
+        I.m11 = 0.0017;  // Y
+        I.m22 = 0.002;   // Z
+        
+        vehicle.setMomentOfInertia(I);
+        vehicle.setMass(0.25);
+        vehicle.setDragMove(0.01);
+        //v.setDragRotate(0.1);
+        
+        SimpleSensors sensors = new SimpleSensors();
+        sensors.setGPSInterval(50);
+        sensors.setGPSDelay(0);  // [ms]
+        //sensors.setGPSStartTime(-1);
+        //sensors.setPressureAltOffset(world.getGlobalReference().alt);
+        sensors.setNoise_Acc(0.02f);
+        sensors.setNoise_Gyo(0.001f);
+        sensors.setNoise_Mag(0.005f);
+        sensors.setNoise_Prs(0.01f);
+        
+        vehicle.setSensors(sensors);
+        
+        return vehicle;
+    }
+
+    private CameraGimbal2D buildGimbal() throws IOException {
+        CameraGimbal2D g = new CameraGimbal2D(world, DEFAULT_GIMBAL_MODEL);
         g.setBaseObject(vehicle);
         g.setPitchChannel(DEFAULT_CAM_PITCH_CHAN);
         g.setPitchScale(DEFAULT_CAM_PITCH_SCAL); 
@@ -360,6 +402,7 @@ public class Simulator implements Runnable {
     public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
     public final static String MAG_STRING = "-automag";
     public final static String REP_STRING = "-rep";
+    public final static String GUI_NO_AA_STRING = "-no-aa";
     public final static String GUI_MAX_STRING = "-max";
     public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
     public final static String AP_STRING = "-ap <autopilot_type>";
@@ -540,6 +583,8 @@ public class Simulator implements Runnable {
                 SHOW_REPORT_PANEL = true;
             } else if (arg.equals("-max")) {
                 GUI_START_MAXIMIZED = true;
+            } else if (arg.equals("-no-aa")) {
+                GUI_ENABLE_AA = false;
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
@@ -566,12 +611,14 @@ public class Simulator implements Runnable {
         System.out.println(SPEED_STRING);
         System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency of the HIL_SENSOR messages.");
         System.out.println("      Default is " + DEFAULT_SIM_SPEED + " Hz\n");
-//        System.out.println(AP_STRING);
-//        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
+        System.out.println(AP_STRING);
+        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
         System.out.println(MAG_STRING);
         System.out.println("      Attempt automatic magnetic field inclination/declination lookup for starting position via NOAA Web service.\n");
         System.out.println(QGC_STRING);
         System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "\n");
+        System.out.println(GUI_NO_AA_STRING);
+        System.out.println("      Disable anti-aliasing on 3D scene (may improve performance).\n");
         System.out.println(GUI_VIEW_STRING);
         System.out.println("      Start with the specified view type. One of: 'fpv', 'grnd', or 'gmbl'. Default is 'fpv'.\n");
         System.out.println(GUI_MAX_STRING);
@@ -583,12 +630,16 @@ public class Simulator implements Runnable {
         System.out.println("      If no MsgIDs are specified, all messages are monitored.");
         System.out.println("");
         System.out.println("Key commands (in the visualizer window):\n");
-        System.out.println(" Views:");
-        System.out.println("   F - First-person camera.");
-        System.out.println("   S - Stationary camera.");
-        System.out.println("   G - Gimbal camera.");
         System.out.println("");
-        System.out.println(" Other:");
+        System.out.println("Views:");
+        System.out.println("    F    - First-person-view camera.");
+        System.out.println("    S    - Stationary ground camera.");
+        System.out.println("    G    - Gimbal camera.");
+        System.out.println("    Z    - Toggle auto-zoom for Stationary camera.");
+        System.out.println("   +/-   - Zoom in/out");
+        System.out.println(" 0/ENTER - Reset zoom to default.");
+        System.out.println("");
+        System.out.println("Actions:");
         System.out.println("   Q   - Disable sim on MAV.");
         System.out.println("   I   - Enable sim on MAV.");
         System.out.println("   R   - Show/hide data reports.");
@@ -596,15 +647,25 @@ public class Simulator implements Runnable {
         System.out.println("  ESC  - Exit jMAVSim.");
         System.out.println(" SPACE - Reset vehicle & view to start position.");
         System.out.println("");
-        System.out.println(" Manipulate Vehicle:");
+        System.out.println("Manipulate Vehicle:");
         System.out.println("  ARROW KEYS      - Rotate around pitch/roll.");
         System.out.println("  END/PG-DN       - Rotate CCW/CW around yaw.");
         System.out.println("  SHIFT + ARROWS  - Move N/S/E/W.");
         System.out.println("  SHIFT + INS/DEL - Move Up/Down.");
-        System.out.println("  NUMPAD 2/8/4/6  - Start/increase rotation rate around pitch/roll axis.");
+        System.out.println("  NUMPAD 8/2/4/6  - Start/increase rotation rate around pitch/roll axis.");
         System.out.println("  NUMPAD 1/3      - Start/increase rotation rate around yaw axis.");
         System.out.println("  NUMPAD 5        - Stop all rotation.");
-        System.out.println("  SHIFT+ANY ABOVE - Rotate/move/increase at a higher/faster rate.");
+        System.out.println("  CTRL + NUMPAD 5 - Reset vehicle attitude, velocity, & accelleration.");
+        System.out.println("");
+        System.out.println("Manipulate Environment:");
+        System.out.println(" ALT +");
+        System.out.println("  ARROW KEYS      - Increase wind deviation (rate of change) in N/S/E/W direction.");
+        System.out.println("  INS/DEL         - Increase wind deviation (rate of change) in Up/Down direction.");
+        System.out.println("  NUMPAD 8/2/4/6  - Increase wind speed in N/S/E/W direction.");
+        System.out.println("  NUMPAD 7/1      - Increase wind speed in Up/Down direction.");
+        System.out.println("  NUMPAD 5        - Stop all wind and deviations.");
+        System.out.println("");
+        System.out.println(" CTRL + any above - Rotate/move/increase at a higher/faster rate.");
         System.out.println("");
         //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
     }
