@@ -28,7 +28,7 @@ Create a standalone runnable JAR file with all libraries included, copy supporti
 ```
 ant create_run_jar copy_res
 cd out/production
-java -jar jmavsim_run.jar [any jMAVSim options]
+java -Djava.ext.dirs= -jar jmavsim_run.jar [any jMAVSim options]
 ```
 
 To create a complete package ready for distribution, build the `distro` target (this will create `out/production/jMAVSim-distrib.zip`):
