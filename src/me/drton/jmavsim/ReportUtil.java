@@ -17,7 +17,7 @@ public final class ReportUtil {
      * When numbers are changing quickly on the screen, there may not be time to read the E notation.
      */
     public static String vector2str(Vector3d vec) {
-        return String.format(ff + ff + ff, vec.getX(), vec.getY(), vec.getZ());
+        return String.format(ff + ff + ff, vec.x, vec.y, vec.z);
     }
 
     /**

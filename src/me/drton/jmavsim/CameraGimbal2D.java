@@ -124,12 +124,12 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
             if (pitchChannel >= 0) {
                 if (control.size() > pitchChannel)
                     this.controls[0] = control.get(pitchChannel);
-                this.attitude.setX(this.controls[0] * pitchScale);
+                this.attitude.x = (this.controls[0] * pitchScale);
             }
             if (rollChannel >= 0) {
                 if (control.size() > rollChannel)
                     this.controls[1] = control.get(rollChannel);
-                this.attitude.setY(this.controls[1] * rollScale);
+                this.attitude.y = (this.controls[1] * rollScale);
             }
         }
 

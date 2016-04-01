@@ -447,7 +447,7 @@ public class Visualizer3D extends JFrame {
                 // Put camera on static point and point to vehicle
                 if (vehicleViewObject != null) {
                     Vector3d pos = new Vector3d(viewerGroundOffset);
-                    pos.setZ(pos.z + world.getEnvironment().getGroundLevel());
+                    pos.z = (pos.z + world.getEnvironment().getGroundLevel());
                     this.setViewerPosition(pos);
                     this.setViewerTargetObject(vehicleViewObject);
                 }
@@ -1006,22 +1006,22 @@ public class Visualizer3D extends JFrame {
             float m = keyBits.get(KeyEvent.VK_SHIFT) ? deg / 5.0f : 1.0f;
 
             if (keyBits.get(KeyEvent.VK_LEFT) || keyBits.get(KeyEvent.VK_KP_LEFT))
-                dir.setX(-m);
+                dir.x = (-m);
 
             if (keyBits.get(KeyEvent.VK_RIGHT) || keyBits.get(KeyEvent.VK_KP_RIGHT))
-                dir.setX(m);
+                dir.x = (m);
 
             if (keyBits.get(KeyEvent.VK_UP) || keyBits.get(KeyEvent.VK_KP_UP))
-                dir.setY(-m);
+                dir.y = (-m);
 
             if (keyBits.get(KeyEvent.VK_DOWN) || keyBits.get(KeyEvent.VK_KP_DOWN))
-                dir.setY(m);
+                dir.y = (m);
 
             if (keyBits.get(KeyEvent.VK_END) || keyBits.get(KeyEvent.VK_INSERT))
-                dir.setZ(-m);
+                dir.z = (-m);
 
             if (keyBits.get(KeyEvent.VK_PAGE_DOWN) || keyBits.get(KeyEvent.VK_DELETE))
-                dir.setZ(m);
+                dir.z = (m);
 
             if (dir.length() != 0.0) {
 
@@ -1048,17 +1048,17 @@ public class Visualizer3D extends JFrame {
             m = keyHandler.keyBits.get(KeyEvent.VK_CONTROL) ? 1.0f : 0.5f;
 
             if (keyBits.get(KeyEvent.VK_NUMPAD4))
-                dir.setX(-m);
+                dir.x = (-m);
             if (keyBits.get(KeyEvent.VK_NUMPAD6))
-                dir.setX(m);
+                dir.x = (m);
             if (keyBits.get(KeyEvent.VK_NUMPAD8))
-                dir.setY(-m);
+                dir.y = (-m);
             if (keyBits.get(KeyEvent.VK_NUMPAD2))
-                dir.setY(m);
+                dir.y = (m);
             if (keyBits.get(KeyEvent.VK_NUMPAD1))
-                dir.setZ(-m);
+                dir.z = (-m);
             if (keyBits.get(KeyEvent.VK_NUMPAD3) || keyBits.get(KeyEvent.VK_NUMPAD7))
-                dir.setZ(m);
+                dir.z = (m);
 
             if (dir.length() != 0.0) {
                 if (keyHandler.keyBits.get(KeyEvent.VK_ALT)) {
