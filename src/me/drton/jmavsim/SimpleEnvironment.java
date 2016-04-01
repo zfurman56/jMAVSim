@@ -1,29 +1,80 @@
 package me.drton.jmavsim;
 
 import javax.vecmath.Vector3d;
+
 import java.util.Random;
 
 /**
  * User: ton Date: 28.11.13 Time: 22:40
  */
 public class SimpleEnvironment extends Environment {
-    private Vector3d magField = new Vector3d(0.21523, 0.0, 0.42741);
-    private Vector3d wind = new Vector3d(0.0, 0.0, 0.0);
-    private double groundLevel = 0.0;
-    private Vector3d g = new Vector3d(0.0, 0.0, 9.80665);
-    private double windDeviation = 20.0;
-    private double windT = 2.0;
-    private Vector3d windCurrent = new Vector3d(0.0, 0.0, 0.0);
+    public static final double Pb = 101325.0;  // static pressure at sea level [Pa]
+    public static final double Tb = 288.15;    // standard temperature at sea level [K]
+    public static final double Lb = -0.0065;   // standard temperature lapse rate [K/m]
+    public static final double M = 0.0289644;  // molar mass of Earth’s air [kg/mol]
+    public static final double G = 9.80665;    // gravity
+    public static final double R = 8.31432;    // universal gas constant
+    
     private Random random = new Random();
     private long lastTime = 0;
 
-        /** set this always to the sampling in degrees for the table below */
+    public SimpleEnvironment(World world) {
+        super(world);
+        setG(null);
+        setMagField(new Vector3d(0.21523, 0.0, 0.42741));
+    }
+
+    @Override
+    public void setG(Vector3d grav) {
+        if (grav == null)
+            g = new Vector3d(0.0, 0.0, G);
+        else
+            g = grav;
+    }
+
+    public void update(long t) {
+        double dt = lastTime == 0 ? 0.0 : (t - lastTime) / 1000.0;
+        lastTime = t;
+        Vector3d r = new Vector3d(windDeviation);
+        r.scale(random.nextGaussian());
+        Vector3d dev = new Vector3d(wind);
+        dev.sub(windCurrent);
+        dev.scale(1.0 / windT);
+        r.add(dev);
+        r.scale(dt);
+        windCurrent.add(r);
+    }
+
+
+    /**
+     * Convert altitude to barometric pressure
+     *
+     * @param alt        Altitude in meters
+     * 
+     * @return Barometric pressure in Pa
+     */
+    public static double alt2baro(double alt) {
+        if (alt <= 11000.0) {
+            return Pb * Math.pow(Tb / (Tb + (Lb * alt)), (G * M) / (R * Lb));
+        } else if (alt <= 20000.0) {
+            double f = 11000.0;
+            double a = alt2baro(f);
+            double c = Tb + (f * Lb);
+            return a * Math.exp(((-G) * M * (alt - f)) / (R * c));
+        }
+        return 0.0;
+    }
+
+
+    // Mag declination calculator
+    
+    /** set this always to the sampling in degrees for the table below */
     private int SAMPLING_RES      = 10;
     private int SAMPLING_MIN_LAT  = -60;
     private int SAMPLING_MAX_LAT  = 60;
     private int SAMPLING_MIN_LON  = -180;
     private int SAMPLING_MAX_LON  = 180;
-
+    
     private int[][] declination_table =
     {
         { 46, 45, 44, 42, 41, 40, 38, 36, 33, 28, 23, 16, 10, 4, -1, -5, -9, -14, -19, -26, -33, -40, -48, -55, -61, -66, -71, -74, -75, -72, -61, -25, 22, 40, 45, 47, 46 },
@@ -41,54 +92,17 @@ public class SimpleEnvironment extends Environment {
         { 3, 9, 14, 17, 20, 21, 19, 14, 4, -8, -19, -25, -26, -25, -21, -17, -12, -7, -2, 1, 5, 9, 13, 15, 16, 16, 13, 7, 0, -7, -12, -15, -14, -11, -6, -1, 3 },
     };
 
-    public SimpleEnvironment(World world) {
-        super(world);
+    private double get_lookup_table_val(int lat_index, int lon_index) {
+        return declination_table[lat_index][lon_index];
     }
-
-    @Override
-    public Vector3d getG() {
-        return g;
-    }
-
-    @Override
-    public Vector3d getMagField(Vector3d point) {
-        return magField;
-    }
-
-    public void setMagField(Vector3d magField) {
-        this.magField = magField;
-    }
-
-    @Override
-    public Vector3d getWind(Vector3d point) {
-        return windCurrent;
-    }
-
-    public void setWind(Vector3d wind) {
-        this.wind = wind;
-    }
-
-    @Override
-    public double getGroundLevel(Vector3d point) {
-        return groundLevel;
-    }
-
-    public void setGroundLevel(double groundLevel) {
-        this.groundLevel = groundLevel;
-    }
-
-    public void update(long t) {
-        double dt = lastTime == 0 ? 0.0 : (t - lastTime) / 1000.0;
-        lastTime = t;
-        Vector3d r = new Vector3d(random.nextGaussian() * windDeviation, random.nextGaussian() * windDeviation, 0.0);
-        Vector3d dev = new Vector3d(wind);
-        dev.sub(windCurrent);
-        dev.scale(1.0 / windT);
-        r.add(dev);
-        r.scale(dt);
-        windCurrent.add(r);
-    }
-
+    
+    /**
+     * Get the mag declination at this point
+     *
+     * @param lat latitude in degrees
+     * @param lon longitude in degrees
+     * @return mag declination in degrees
+     */
     public double getMagDeclination(double lat, double lon) {
         /*
          * If the values exceed valid ranges, return zero as default
@@ -142,7 +156,4 @@ public class SimpleEnvironment extends Environment {
         return ((lat - min_lat) / SAMPLING_RES) * (declination_max - declination_min) + declination_min;
     }
 
-    private double get_lookup_table_val(int lat_index, int lon_index) {
-        return declination_table[lat_index][lon_index];
-    }
 }

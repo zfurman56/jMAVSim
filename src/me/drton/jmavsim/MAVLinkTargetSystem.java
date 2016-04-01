@@ -8,8 +8,8 @@ import me.drton.jmavlib.mavlink.MAVLinkSchema;
  */
 public class MAVLinkTargetSystem extends MAVLinkSystem {
     private Target target;
-    private long msgIntervalPosition = 200;
-    private long msgLastPosition = 0;
+    private long msgIntervalPosition = 200;  // [ms]
+    private long msgPositionNext = 0;
 
     public MAVLinkTargetSystem(MAVLinkSchema schema, int sysId, int componentId, Target target) {
         super(schema, sysId, componentId);
@@ -35,8 +35,7 @@ public class MAVLinkTargetSystem extends MAVLinkSystem {
     @Override
     public void update(long t) {
         super.update(t);
-        if (t - msgLastPosition > msgIntervalPosition) {
-            msgLastPosition = t;
+        if (msgPositionNext <= t && msgIntervalPosition > 0) {
             MAVLinkMessage msg_target = new MAVLinkMessage(schema, "GLOBAL_POSITION_INT", sysId, componentId);
             GNSSReport p = target.getGlobalPosition();
             msg_target.set("time_boot_ms", t * 1000);
@@ -47,6 +46,7 @@ public class MAVLinkTargetSystem extends MAVLinkSystem {
             msg_target.set("vy", (int) (p.velocity.y * 100));
             msg_target.set("vz", (int) (p.velocity.z * 100));
             sendMessage(msg_target);
+            msgPositionNext = t + msgIntervalPosition;
         }
     }
 }

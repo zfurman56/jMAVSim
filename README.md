@@ -1,7 +1,5 @@
 ## jMAVSim ##
 
-[![Build Status](https://travis-ci.org/PX4/jMAVSim.svg?branch=master)](https://travis-ci.org/PX4/jMAVSim)
-
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/DrTon/jMAVSim?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Simple multirotor simulator with MAVLink protocol support
@@ -15,7 +13,7 @@ Requirements:
 
 Clone repository and initialize submodules:
 ```
-git clone https://github.com/PX4/jMAVSim.git
+git clone https://github.com/mpaperno/jMAVSim.git
 git submodule init
 git submodule update
 ```
@@ -45,6 +43,25 @@ On **Windows** use `;` instead of `:` in -cp:
 ```
 java -cp lib/*;out/production/jmavsim.jar me.drton.jmavsim.Simulator
 ```
+
+#### Alternate build / run / distribute
+
+Create a standalone runnable JAR file with all libraries included, copy supporting resources, and use a shorter command to execute:
+
+```
+ant create-run-jar copy_res
+cd out/production
+java -jar jmavsim_run.jar [any jMAVSim options]
+```
+
+To create a complete package ready for distribution, build the `distro` target (this will create `out/production/jMAVSim-distrib.zip`):
+
+```
+ant distro
+```
+
+To delete everything in the build folder `ant clean-all`.
+
 
 ### Troubleshooting ###
 

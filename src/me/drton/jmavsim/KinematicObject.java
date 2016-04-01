@@ -2,13 +2,19 @@ package me.drton.jmavsim;
 
 import com.sun.j3d.loaders.Scene;
 import com.sun.j3d.loaders.objectfile.ObjectFile;
+//import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
 
+//import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
+//import javax.media.j3d.Shape3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
+
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Abstract kinematic object class.
@@ -16,20 +22,24 @@ import java.io.FileNotFoundException;
  * These parameters may be set directly for objects moving by fixed trajectory or simulated from external forces (see DynamicObject).
  */
 public abstract class KinematicObject extends WorldObject {
+    protected boolean ignoreGravity = false;
+    protected boolean ignoreWind = false;
     protected Vector3d position = new Vector3d();
     protected Vector3d velocity = new Vector3d();
     protected Vector3d acceleration = new Vector3d();
     protected Matrix3d rotation = new Matrix3d();
     protected Vector3d rotationRate = new Vector3d();
+    protected Vector3d attitude = new Vector3d();
 
-    private Transform3D transform;
+    protected Transform3D transform;
     protected TransformGroup transformGroup;
-    private BranchGroup branchGroup;
+    protected BranchGroup branchGroup;
 
     public KinematicObject(World world) {
         super(world);
         rotation.setIdentity();
         transformGroup = new TransformGroup();
+        transformGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
         transformGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         transform = new Transform3D();
         transformGroup.setTransform(transform);
@@ -44,9 +54,30 @@ public abstract class KinematicObject extends WorldObject {
      * @throws java.io.FileNotFoundException
      */
     protected void modelFromFile(String modelFile) throws FileNotFoundException {
+        URL file = null;
+        try {
+            file = new URL("file:./" + modelFile);
+        } catch (MalformedURLException e) {
+            System.err.println(e);
+            System.exit(1);
+        }
         ObjectFile objectFile = new ObjectFile();
-        Scene scene = objectFile.load(modelFile);
-        transformGroup.addChild(scene.getSceneGroup());
+        Scene scene = objectFile.load(file);
+        
+        BranchGroup bg = scene.getSceneGroup();
+        
+//        Shape3D shape = (Shape3D)bg.getChild(0);
+//        shape.setPickable(true);
+//        TransformGroup objRotate = new TransformGroup();
+//        objRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+//        objRotate.addChild(bg);
+//        MouseRotate f1=new MouseRotate();
+//        f1.setSchedulingBounds(new BoundingSphere());
+//        f1.setTransformGroup(objRotate);
+//        bg.addChild(f1);
+//        transformGroup.addChild(objRotate);
+
+        transformGroup.addChild(bg);
     }
 
     public BranchGroup getBranchGroup() {
@@ -59,23 +90,74 @@ public abstract class KinematicObject extends WorldObject {
         transformGroup.setTransform(transform);
     }
 
+    public void setIgnoreGravity(boolean ignoreGravity) {
+        this.ignoreGravity = ignoreGravity;
+    }
+
+    public boolean isIgnoreWind() {
+        return ignoreWind;
+    }
+
+    public void setIgnoreWind(boolean ignoreWind) {
+        this.ignoreWind = ignoreWind;
+    }
+
     public Vector3d getPosition() {
         return position;
+    }
+
+    public void setPosition(Vector3d position) {
+        this.position = position;
     }
 
     public Vector3d getVelocity() {
         return velocity;
     }
 
+    public void setVelocity(Vector3d vel) {
+        this.velocity = vel;
+    }
+
     public Vector3d getAcceleration() {
         return acceleration;
+    }
+
+    public void setAcceleration(Vector3d acc) {
+        this.acceleration = acc;
     }
 
     public Matrix3d getRotation() {
         return rotation;
     }
 
+    public void setRotation(Matrix3d rotation) {
+        this.rotation = rotation;
+    }
+
     public Vector3d getRotationRate() {
         return rotationRate;
+    }
+
+    public void setRotationRate(Vector3d rate) {
+        this.rotationRate = rate;
+    }
+
+    public void resetObjectParameters() {
+        position = new Vector3d();
+        velocity = new Vector3d();
+        acceleration = new Vector3d();
+        rotation = new Matrix3d();
+        rotationRate = new Vector3d();
+        
+        rotation.rotX(0);
+    }
+    
+    public static Vector3d utilMatrixToEulers(Matrix3d m) {
+        Vector3d tv = new Vector3d();
+        tv.y = Math.atan2(m.m21, m.m22);
+        tv.z = Math.atan2(m.m10, m.m00);
+        if (Math.abs(Math.cos(tv.y)) > 0.002)
+            tv.x = Math.atan2(-m.m20, Math.sqrt(m.m21 * m.m21 + m.m22 * m.m22));
+        return tv;
     }
 }

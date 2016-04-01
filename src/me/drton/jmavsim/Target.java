@@ -25,8 +25,8 @@ public abstract class Target extends KinematicObject {
         LatLonAlt latLonAlt = gpsProjector.reproject(new double[]{pos.x, pos.y, pos.z});
         GNSSReport gps = new GNSSReport();
         gps.position = latLonAlt;
-        gps.eph = 1.0;
-        gps.epv = 1.0;
+        gps.eph = 1.0f;
+        gps.epv = 1.0f;
         gps.velocity = getVelocity();
         return gps;
     }

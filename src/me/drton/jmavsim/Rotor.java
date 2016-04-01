@@ -53,6 +53,13 @@ public class Rotor {
     }
 
     /**
+     * Get control signal
+     */
+    public double getControl() {
+        return control;
+    }
+
+    /**
      * Get current rotor thrust, [N]
      */
     public double getThrust() {
@@ -64,5 +71,26 @@ public class Rotor {
      */
     public double getTorque() {
         return control * fullTorque;
+    }
+
+    /**
+     * Get full thrust, [N]
+     */
+    public double getFullThrust() {
+        return fullThrust;
+    }
+
+    /**
+     * Get torque at full thrust, [N * m]
+     */
+    public double getFullTorque() {
+        return fullTorque;
+    }
+
+    /**
+     * Get time constant (spin-up time), [s].
+     */
+    public double getTimeConstant() {
+        return tau;
     }
 }

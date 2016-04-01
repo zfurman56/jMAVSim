@@ -4,7 +4,7 @@ package me.drton.jmavsim;
  * User: ton Date: 02.02.14 Time: 11:33
  */
 public abstract class WorldObject {
-    private final World world;
+    protected final World world;
 
     public WorldObject(World world) {
         this.world = world;

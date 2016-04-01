@@ -17,8 +17,9 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
     private AbstractVehicle vehicle;
     private boolean gotHeartBeat = false;
     private boolean inited = false;
+    private boolean stopped = false;
     private long initTime = 0;
-    private long initDelay = 1000;
+    private long initDelay = 500;
 
     /**
      * Create MAVLinkHILSimulator, MAVLink system that sends simulated sensors to autopilot and passes controls from
@@ -43,18 +44,21 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                     msg.getDouble("aux2"), msg.getDouble("aux3"), msg.getDouble("aux4"));
             vehicle.setControl(control);
         } else if ("HEARTBEAT".equals(msg.getMsgName())) {
-            if (!gotHeartBeat && sysId == msg.systemID) {
-                gotHeartBeat = true;
-                initTime = t + initDelay;
-            } else if (!gotHeartBeat && sysId != msg.systemID) {
-                System.out.println("WARNING: Got heartbeat from system #" + Integer.toString(msg.systemID) +
-                    " but configured to only accept messages from system #" + Integer.toString(sysId) +
-                    ". Please change the system ID parameter to match in order to use HITL/SITL.");
+            if (!gotHeartBeat && !stopped) {
+                if (sysId < 0 || sysId == msg.systemID) {
+                    gotHeartBeat = true;
+                    initTime = t + initDelay;
+                    if (sysId < 0)
+                        sysId = msg.systemID;
+                } else if (sysId > -1 && sysId != msg.systemID) {
+                    System.out.println("WARNING: Got heartbeat from system #" + Integer.toString(msg.systemID) +
+                        " but configured to only accept messages from system #" + Integer.toString(sysId) +
+                        ". Please change the system ID parameter to match in order to use HITL/SITL.");
+                }
             }
-            if (!inited && t > initTime) {
+            if (gotHeartBeat && !inited && t > initTime) {
                 System.out.println("Init MAVLink");
                 initMavLink();
-                inited = true;
             }
             if ((msg.getInt("base_mode") & 128) == 0) {
                 vehicle.setControl(Collections.<Double>emptyList());
@@ -64,29 +68,63 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
     }
 
+    public void initMavLink() {
+        // Set HIL mode
+        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
+        msg.set("target_system", sysId);
+        msg.set("base_mode", 32);     // HIL, disarmed
+        sendMessage(msg);
+        if (vehicle.getSensors().getGPSStartTime() == -1)
+            vehicle.getSensors().setGPSStartTime(System.currentTimeMillis() + 1000);
+        stopped = false;
+        inited = true;
+    }
+    
+    public void endSim() {
+        if (!inited)
+            return;
+        // Send message to end HIL mode
+        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
+        msg.set("target_system", sysId);
+        msg.set("base_mode", 0);     // disarmed
+        sendMessage(msg);
+        inited = false;
+        gotHeartBeat = false;
+        stopped = true;
+        vehicle.getSensors().setGPSStartTime(-1);
+    }
+    
     @Override
     public void update(long t) {
         super.update(t);
         long tu = t * 1000; // Time in us
+        
+        if (!this.inited)
+            return;
 
         Sensors sensors = vehicle.getSensors();
 
         // Sensors
         MAVLinkMessage msg_sensor = new MAVLinkMessage(schema, "HIL_SENSOR", sysId, componentId);
         msg_sensor.set("time_usec", tu);
-        Vector3d acc = sensors.getAcc();
-        msg_sensor.set("xacc", acc.x);
-        msg_sensor.set("yacc", acc.y);
-        msg_sensor.set("zacc", acc.z);
-        Vector3d gyro = sensors.getGyro();
-        msg_sensor.set("xgyro", gyro.x);
-        msg_sensor.set("ygyro", gyro.y);
-        msg_sensor.set("zgyro", gyro.z);
-        Vector3d mag = sensors.getMag();
-        msg_sensor.set("xmag", mag.x);
-        msg_sensor.set("ymag", mag.y);
-        msg_sensor.set("zmag", mag.z);
+        Vector3d tv = sensors.getAcc();
+        msg_sensor.set("xacc", tv.x);
+        msg_sensor.set("yacc", tv.y);
+        msg_sensor.set("zacc", tv.z);
+        tv = sensors.getGyro();
+        msg_sensor.set("xgyro", tv.x);
+        msg_sensor.set("ygyro", tv.y);
+        msg_sensor.set("zgyro", tv.z);
+        tv = sensors.getMag();
+        msg_sensor.set("xmag", tv.x);
+        msg_sensor.set("ymag", tv.y);
+        msg_sensor.set("zmag", tv.z);
         msg_sensor.set("pressure_alt", sensors.getPressureAlt());
+        msg_sensor.set("abs_pressure", sensors.getPressure() * 0.01);  // Pa to millibar
+        if (sensors.isReset()) {
+            msg_sensor.set("fields_updated", (1<<31));
+            sensors.setReset(false);
+        }
         sendMessage(msg_sensor);
 
         // GPS
@@ -101,10 +139,10 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                 msg_gps.set("vn", (int) (gps.velocity.x * 100));
                 msg_gps.set("ve", (int) (gps.velocity.y * 100));
                 msg_gps.set("vd", (int) (gps.velocity.z * 100));
-                msg_gps.set("eph", (int) (gps.eph * 100));
-                msg_gps.set("epv", (int) (gps.epv * 100));
+                msg_gps.set("eph", (int) (gps.eph * 100f));
+                msg_gps.set("epv", (int) (gps.epv * 100f));
                 msg_gps.set("vel", (int) (gps.getSpeed() * 100));
-                msg_gps.set("cog", (int) (gps.getCog() / Math.PI * 18000.0));
+                msg_gps.set("cog", (int) Math.toDegrees(gps.getCog()) * 100);
                 msg_gps.set("fix_type", gps.fix);
                 msg_gps.set("satellites_visible", 10);
                 sendMessage(msg_gps);
@@ -112,11 +150,4 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
     }
 
-    private void initMavLink() {
-        // Set HIL mode
-        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
-        msg.set("target_system", sysId);
-        msg.set("base_mode", 32);     // HIL, disarmed
-        sendMessage(msg);
-    }
 }

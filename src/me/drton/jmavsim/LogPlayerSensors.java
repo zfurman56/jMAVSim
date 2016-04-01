@@ -23,7 +23,9 @@ public class LogPlayerSensors implements Sensors {
     private Vector3d mag = new Vector3d();
     private double baroAlt;
     private GNSSReport gnss = new GNSSReport();
+    private LatLonAlt globalPosition = new LatLonAlt(0, 0, 0);
     private boolean gpsUpdated = false;
+    private boolean reset = false;
 
     void openLog(String fileName, long startTime) throws IOException, FormatErrorException {
         logReader = new PX4LogReader(fileName);
@@ -32,6 +34,14 @@ public class LogPlayerSensors implements Sensors {
 
     @Override
     public void setObject(DynamicObject object) {
+    }
+
+    @Override
+    public void setGPSStartTime(long time) {}
+
+    @Override
+    public long getGPSStartTime() {
+        return 0;
     }
 
     @Override
@@ -55,10 +65,20 @@ public class LogPlayerSensors implements Sensors {
     }
 
     @Override
+    public double getPressure() {
+        return SimpleEnvironment.alt2baro(getPressureAlt());
+    }
+    
+    @Override
     public GNSSReport getGNSS() {
         return gnss;
     }
 
+    @Override
+    public LatLonAlt getGlobalPosition() {
+        return globalPosition;
+    }
+    
     @Override
     public boolean isGPSUpdated() {
         boolean res = gpsUpdated;
@@ -111,14 +131,28 @@ public class LogPlayerSensors implements Sensors {
                 gnss.position = new LatLonAlt(((Number) logData.get("GPS.Lat")).doubleValue(),
                         ((Number) logData.get("GPS.Lon")).doubleValue(),
                         ((Number) logData.get("GPS.Alt")).doubleValue());
-                gnss.eph = ((Number) logData.get("GPS.EPH")).doubleValue();
-                gnss.epv = ((Number) logData.get("GPS.EPV")).doubleValue();
+                gnss.eph = ((Number) logData.get("GPS.EPH")).floatValue();
+                gnss.epv = ((Number) logData.get("GPS.EPV")).floatValue();
                 gnss.velocity = new Vector3d(((Number) logData.get("GPS.VelN")).doubleValue(),
                         ((Number) logData.get("GPS.VelE")).doubleValue(),
                         ((Number) logData.get("GPS.VelD")).doubleValue());
                 gnss.fix = (Integer) logData.get("GPS.Fix");
                 gnss.time = (Long) logData.get("GPS.GPSTime");
+                
+                globalPosition = gnss.position;
             }
         }
     }
+
+    @Override
+    public boolean isReset() {
+        return reset;
+    }
+
+    @Override
+    public void setReset(boolean reset) {
+        this.reset = reset;
+    }
+
+
 }

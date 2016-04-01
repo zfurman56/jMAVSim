@@ -1,5 +1,6 @@
 package me.drton.jmavsim.vehicle;
 
+import me.drton.jmavsim.ReportUtil;
 import me.drton.jmavsim.Rotor;
 import me.drton.jmavsim.World;
 
@@ -21,6 +22,56 @@ public abstract class AbstractMulticopter extends AbstractVehicle {
         for (int i = 0; i < getRotorsNum(); i++) {
             rotors[i] = new Rotor();
         }
+    }
+
+    public void report(StringBuilder builder) {
+        super.report(builder);
+        builder.append("MULTICOPTER");
+        builder.append(newLine);
+        builder.append("===========");
+        builder.append(newLine);
+
+        for (int i = 0; i < getRotorsNum(); i++) {
+            reportRotor(builder, i);
+            builder.append(newLine);
+        }
+
+    }
+
+    private void reportRotor(StringBuilder builder, int rotorIndex) {
+        Rotor rotor = rotors[rotorIndex];
+
+        builder.append("ROTOR #");
+        builder.append(rotorIndex);
+        builder.append(newLine);
+
+        builder.append("Control: ");
+        builder.append(String.format("%s", ReportUtil.d2str(rotor.getControl())));
+        builder.append(newLine);
+
+        builder.append("Thrust: ");
+        builder.append(String.format("%s", ReportUtil.d2str(rotor.getThrust())));
+        builder.append(" / ");
+        builder.append(String.format("%s", ReportUtil.d2str(rotor.getFullThrust())));
+        builder.append(" [N]");
+        builder.append(newLine);
+
+        builder.append("Torque: ");
+        builder.append(String.format("%s", ReportUtil.d2str(rotor.getTorque())));
+        builder.append(" / ");
+        builder.append(String.format("%s", ReportUtil.d2str(rotor.getFullTorque())));
+        builder.append(" [Nm]");
+        builder.append(newLine);
+
+        builder.append("Spin up: ");
+        builder.append(String.format("%s", ReportUtil.d2str(rotor.getTimeConstant())));
+        builder.append(" [s]");
+        builder.append(newLine);
+
+        builder.append("Position: ");
+        builder.append(ReportUtil.vector2str(getRotorPosition(rotorIndex)));
+        builder.append(newLine);
+
     }
 
     /**
@@ -68,7 +119,8 @@ public abstract class AbstractMulticopter extends AbstractVehicle {
         rotation.transform(f);
         Vector3d airSpeed = new Vector3d(getVelocity());
         airSpeed.scale(-1.0);
-        airSpeed.add(getWorld().getEnvironment().getWind(position));
+        if (!ignoreWind)
+            airSpeed.add(getWorld().getEnvironment().getCurrentWind(position));
         f.add(getAirFlowForce(airSpeed));
         return f;
     }
