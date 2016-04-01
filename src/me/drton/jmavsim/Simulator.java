@@ -36,7 +36,8 @@ public class Simulator implements Runnable {
     public static boolean SHOW_REPORT_PANEL = false;
     public static boolean GUI_START_MAXIMIZED = false;
     public static boolean GUI_ENABLE_AA = true;  // anti-alias on 3D scene
-    public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_FPV;
+    public static boolean LOG_TO_STDOUT = true;  // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
+    public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_STATIC;
     
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
     public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
@@ -101,11 +102,17 @@ public class Simulator implements Runnable {
     private ScheduledFuture<?> thisHandle;
     private World world;
     private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private SystemOutHandler outputHandler;
 //  private int simDelayMax = 500;  // Max delay between simulated and real time to skip samples in simulator, in ms
     
     public volatile boolean shutdown = false;
 
     public Simulator() throws IOException, InterruptedException, ParserConfigurationException, SAXException {
+        
+        // set up custom output handler for all System.out messages
+        outputHandler = new SystemOutHandler(LOG_TO_STDOUT);
+        outputHandler.start(true);
+        
         // Create world
         world = new World();
         LatLonAlt referencePos = DEFAULT_ORIGIN_POS;
@@ -214,6 +221,9 @@ public class Simulator implements Runnable {
         // Create simulation report updater
         world.addObject(new ReportUpdater(world, visualizer));
         visualizer.toggleReportPanel(SHOW_REPORT_PANEL);
+        
+        // add GUI output stream handler for displaying messages
+        outputHandler.addOutputStream(visualizer.getOutputStream());
 
         // Open ports
         autopilotMavLinkPort.open();
@@ -407,10 +417,10 @@ public class Simulator implements Runnable {
     public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
     public final static String AP_STRING = "-ap <autopilot_type>";
     public final static String SPEED_STRING = "-r <Hz>";
-    public final static String CMD_STRING = "java -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
-    public final static String CMD_STRING_JAR = "java -jar jmavsim_run.jar";
+    public final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
+    public final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
     public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " + 
-                                              "[" + QGC_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
+                                              "[" + QGC_STRING + "] [" + GUI_NO_AA_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
             throws InterruptedException, IOException, ParserConfigurationException, SAXException {
@@ -601,36 +611,45 @@ public class Simulator implements Runnable {
         new Simulator();
     }
 
-    private static void handleHelpFlag() {
+    public static void handleHelpFlag() {
+        String viewType = (GUI_START_VIEW == ViewTypes.VIEW_FPV ? "fpv" : GUI_START_VIEW == ViewTypes.VIEW_GIMBAL ? "gmbl" : "grnd");
+        
         System.out.println("\nUsage: " + USAGE_STRING + "\n");
         System.out.println("Command-line options:\n");
         System.out.println(UDP_STRING);
-        System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress + ":" + autopilotPort + ").\n");
+        System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress + ":" + autopilotPort + ").");
         System.out.println(SERIAL_STRING);
-        System.out.println("      Open a serial connection to the MAV (default: " + serialPath + " @ " + serialBaudRate + ").\n");
+        System.out.println("      Open a serial connection to the MAV (default: " + serialPath + " @ " + serialBaudRate + ").");
         System.out.println(SPEED_STRING);
-        System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency of the HIL_SENSOR messages.");
-        System.out.println("      Default is " + DEFAULT_SIM_SPEED + " Hz\n");
+        System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency");
+        System.out.println("      of the HIL_SENSOR messages. Default is " + DEFAULT_SIM_SPEED + " Hz");
         System.out.println(AP_STRING);
-        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "\n");
+        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "");
         System.out.println(MAG_STRING);
-        System.out.println("      Attempt automatic magnetic field inclination/declination lookup for starting position via NOAA Web service.\n");
+        System.out.println("      Attempt automatic magnetic field inclination/declination lookup");
+        System.out.println("      for starting position via NOAA Web service.");
         System.out.println(QGC_STRING);
-        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "\n");
+        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "");
         System.out.println(GUI_NO_AA_STRING);
-        System.out.println("      Disable anti-aliasing on 3D scene (may improve performance).\n");
+        System.out.println("      Disable anti-aliasing on 3D scene (may improve performance).");
         System.out.println(GUI_VIEW_STRING);
-        System.out.println("      Start with the specified view type. One of: 'fpv', 'grnd', or 'gmbl'. Default is 'fpv'.\n");
+        System.out.println("      Start with the specified view type. One of: 'fpv', 'grnd', or 'gmbl'.");
+        System.out.println("      Default is '" + viewType +"'.");
         System.out.println(GUI_MAX_STRING);
-        System.out.println("      Start with the visualizer GUI window maximized.\n");
+        System.out.println("      Start with the visualizer GUI window maximized.");
         System.out.println(REP_STRING);
-        System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).\n");
+        System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).");
         System.out.println(PRINT_INDICATION_STRING);
         System.out.println("      Monitor (echo) all/selected MAVLink messages to the console.");
         System.out.println("      If no MsgIDs are specified, all messages are monitored.");
         System.out.println("");
-        System.out.println("Key commands (in the visualizer window):\n");
+        System.out.println("Key commands (in the visualizer window):");
         System.out.println("");
+        printKeyCommands();
+        //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
+    }
+    
+    public static void printKeyCommands() {
         System.out.println("Views:");
         System.out.println("    F    - First-person-view camera.");
         System.out.println("    S    - Stationary ground camera.");
@@ -642,8 +661,11 @@ public class Simulator implements Runnable {
         System.out.println("Actions:");
         System.out.println("   Q   - Disable sim on MAV.");
         System.out.println("   I   - Enable sim on MAV.");
-        System.out.println("   R   - Show/hide data reports.");
-        System.out.println("   T   - Pause/resume data report updates.");
+        System.out.println("   H   - Toggle HUD overlay.");
+        System.out.println("   C   - Clear all messages on HUD.");
+        System.out.println("   R   - Toggle data report sidebar.");
+        System.out.println("   T   - Toggle data report updates.");
+        System.out.println("   F1  - Show this key commands reference.");
         System.out.println("  ESC  - Exit jMAVSim.");
         System.out.println(" SPACE - Reset vehicle & view to start position.");
         System.out.println("");
@@ -659,15 +681,14 @@ public class Simulator implements Runnable {
         System.out.println("");
         System.out.println("Manipulate Environment:");
         System.out.println(" ALT +");
-        System.out.println("  ARROW KEYS      - Increase wind deviation (rate of change) in N/S/E/W direction.");
-        System.out.println("  INS/DEL         - Increase wind deviation (rate of change) in Up/Down direction.");
+        System.out.println("  ARROW KEYS      - Increase wind deviation in N/S/E/W direction.");
+        System.out.println("  INS/DEL         - Increase wind deviation in Up/Down direction.");
         System.out.println("  NUMPAD 8/2/4/6  - Increase wind speed in N/S/E/W direction.");
         System.out.println("  NUMPAD 7/1      - Increase wind speed in Up/Down direction.");
         System.out.println("  NUMPAD 5        - Stop all wind and deviations.");
         System.out.println("");
-        System.out.println(" CTRL + any above - Rotate/move/increase at a higher/faster rate.");
+        System.out.println(" CTRL+ Manipulate - Rotate/move/increase at a higher/faster rate.");
         System.out.println("");
-        //System.out.println("\n Note: if <qgc <port> is set to -1, JMavSim won't generate Mavlink messages for GroundControl.");
     }
 
 }

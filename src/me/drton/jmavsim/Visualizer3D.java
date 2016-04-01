@@ -1,7 +1,7 @@
 package me.drton.jmavsim;
 
 //import com.sun.j3d.utils.geometry.Box;
-import com.sun.j3d.utils.geometry.Cylinder;
+//import com.sun.j3d.utils.geometry.Cylinder;
 import com.sun.j3d.utils.geometry.Sphere;
 import com.sun.j3d.utils.image.TextureLoader;
 import com.sun.j3d.utils.universe.SimpleUniverse;
@@ -15,8 +15,13 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Enumeration;
 
@@ -66,6 +71,8 @@ public class Visualizer3D extends JFrame {
     private JSplitPane splitPane;
     private ReportPanel reportPanel;
     private KeyboardHandler keyHandler;
+    private OutputStream outputStream;  // for receiving system output messages
+    private MessageOutputStream msgOutputStream;  // for logging messages
     private Matrix3d mtx1 = new Matrix3d();  // for calculations
     private Matrix3d mtx2 = new Matrix3d();
     private static final long serialVersionUID = 1L;
@@ -74,6 +81,9 @@ public class Visualizer3D extends JFrame {
         this.world = world;
 
         keyHandler = new KeyboardHandler();
+        msgOutputStream = new MessageOutputStream();
+        outputStream = msgOutputStream;
+//        outputStream = new BufferedOutputStream(msgOutputStream);
 
         Dimension size = WINDOW_SIZE;
         Rectangle sizeBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
@@ -101,7 +111,7 @@ public class Visualizer3D extends JFrame {
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
         if (showOverlay)
-            canvas = new CustomCanvas3D(gc, overlaySize);
+            canvas = new CustomCanvas3D(gc, size, overlaySize);
         else
             canvas = new Canvas3D(gc);
         canvas.setFocusable(false);
@@ -279,7 +289,7 @@ public class Visualizer3D extends JFrame {
         if (texture == null)
             System.err.println("Cannot load texture from " + fn);
         else {
-            //System.out.println("Loaded texture from " + fn);
+            System.out.println("Loaded texture from " + fn);
             texture.setEnable(true);
         }
         return texture;
@@ -417,6 +427,10 @@ public class Visualizer3D extends JFrame {
     }
 
     
+    public OutputStream getOutputStream() {
+        return outputStream;
+    }
+
     public void setDynZoomDistance(float dynZoomDistance) {
         this.dynZoomDistance = dynZoomDistance;
     }
@@ -600,18 +614,27 @@ public class Visualizer3D extends JFrame {
         if (vec == null) {
             if (setBase)
                 world.getEnvironment().setWind(new Vector3d());
-            if (setCurrent)
+            if (setCurrent) {
                 world.getEnvironment().setCurrentWind(new Vector3d());
-            if (setDeviation)
+                System.out.println("Wind reset to zero.");
+            }
+            if (setDeviation) {
                 world.getEnvironment().setWindDeviation(new Vector3d());
-        } else {
+                System.out.println("Wind deviation reset to zero.");
+            }
+        } 
+        else {
             Vector3d adj = new Vector3d(vec);
             if (setBase)
                 world.getEnvironment().getWind().add(adj);
-            if (setCurrent)
+            if (setCurrent) {
                 world.getEnvironment().getCurrentWind(null).add(adj);
-            if (setDeviation)
+                System.out.println("Wind vector is now " + ReportUtil.vector2str(world.getEnvironment().getCurrentWind(viewerPosition)));
+            }
+            if (setDeviation) {
                 world.getEnvironment().world.getEnvironment().getWindDeviation().add(adj);
+                System.out.println("Wind deviation is now " + ReportUtil.vector2str(world.getEnvironment().getWindDeviation()));
+            }
         }
     }
     
@@ -628,10 +651,13 @@ public class Visualizer3D extends JFrame {
         
         private int[] overlayMargins = {10, 10};  // x, y from left bottom corner
         private Font font = new Font("SansSerif", Font.BOLD, 14);
+        private Font msgFont = new Font("SansSerif", Font.PLAIN, 14);
         private Color txtColor = Color.white;
         private Color hdgColor = Color.magenta;
         private Color crsColor = Color.green;
         private Color windColor = Color.blue;
+        private Color msgColor = new Color(255, 255, 255, 240);
+        private Color msgBgColor = new Color(202, 162, 0, 60);
         
         private BufferedImage compassOverlay;
         private J3DGraphics2D g2d;
@@ -642,24 +668,37 @@ public class Visualizer3D extends JFrame {
         private Line2D.Float hdgLine;
         private Line2D.Float crsLine;
         private Line2D.Float windLine;
+        private RoundRectangle2D.Float msgBg = new RoundRectangle2D.Float();
         private int[] overlaySize = new int[2];  // x, y
+        private int[] messagesSize = {450, 600};  // x, y
+        private int msgLineHeight = 15;
         private int halfW;
         private int fps = 1;
         private int framesCount = 0;
         private long frameTime = 0L;
 
-        public CustomCanvas3D(GraphicsConfiguration gc, int overlayWidth) throws IOException 
+        public CustomCanvas3D(GraphicsConfiguration gc, Dimension windowSize, int overlayWidth) throws IOException 
         {
             super(gc);
             g2d = this.getGraphics2D();
             
             setAA(AA_ENABLED);
-            
+
+            // constrain overlay sizes
+            if (overlayWidth > windowSize.getWidth() / 2)
+                overlayWidth = (int) (windowSize.getWidth() / 2);
+            if (overlayWidth + 45 > windowSize.getHeight() / 2)
+                overlayWidth = (int) (windowSize.getHeight() / 2);
+            if (messagesSize[0] > windowSize.getWidth() / 2)
+                messagesSize[0] = (int) (windowSize.getWidth() / 2);
+            if (messagesSize[1] > windowSize.getHeight() * 0.75)
+                messagesSize[1] = (int) (windowSize.getHeight() * 0.75);
+
             overlaySize[0] = overlayWidth;
             overlaySize[1] = overlayWidth + 45;
             halfW = overlayWidth / 2;
             frameTime = System.nanoTime();
-
+            
             // drawing surface for vector lines
             drawImg = new BufferedImage(overlayWidth, overlayWidth, BufferedImage.TYPE_4BYTE_ABGR);
             drawg2d = drawImg.createGraphics();
@@ -705,7 +744,7 @@ public class Visualizer3D extends JFrame {
 
             clearDrawing();
             
-            // compass rotation in relatin to viewer
+            // compass rotation in relation to viewer
             viewerTransform.get(m1);
             dZ = -Math.atan2(m1.getElement(1, 0), m1.getElement(0, 0)) + Math.toRadians(90.0);
             affTrans.setToRotation(dZ, halfW, halfW);
@@ -768,6 +807,31 @@ public class Visualizer3D extends JFrame {
             g2d.setColor(windColor);
             g2d.drawString("WND", x, y);
 
+            // messages on the bottom right
+            if (msgOutputStream.getListLen() > 0) {
+                x = this.getWidth() - messagesSize[0] - overlayMargins[0];
+                int h = Math.min(messagesSize[1], msgOutputStream.getListLen() * msgLineHeight + 5);
+                y = this.getHeight() - h - overlayMargins[1];
+                msgBg.setRoundRect(x, y, messagesSize[0], h, 15, 15);
+    
+//                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
+                g2d.setColor(msgBgColor);
+                g2d.draw(msgBg);
+                g2d.fill(msgBg);
+//                g2d.setComposite(AlphaComposite.Src);
+    
+                x += 10;
+                y += msgLineHeight;
+                g2d.setFont(msgFont);
+                g2d.setColor(msgColor);
+                for (String msg : msgOutputStream.getStrings()) {
+                    g2d.drawString(msg, x, y);
+                    y += msgLineHeight;
+                    if (y > this.getHeight())
+                        break;
+                }
+            }
+            
             g2d.flush(false);
 
             ++framesCount;
@@ -817,7 +881,7 @@ public class Visualizer3D extends JFrame {
                 case KeyEvent.VK_G :
                     setViewType(ViewTypes.VIEW_GIMBAL);
                     break;
-                    
+
                 // reporting panel
                 case KeyEvent.VK_R :
                     toggleReportPanel();
@@ -858,7 +922,25 @@ public class Visualizer3D extends JFrame {
                     if (hilSystem != null)
                         hilSystem.endSim();
                     break;
-               
+
+                // toggle HUD overlay
+                case KeyEvent.VK_H :
+                    setShowOverlay(!showOverlay);
+                    break;
+
+                // clear messages from HUD
+                case KeyEvent.VK_C :
+                    msgOutputStream.clearMessages();
+                    break;
+                
+                // show help text
+                case KeyEvent.VK_F1 :
+                    msgOutputStream.clearMessages();
+                    msgOutputStream.setNumOfMessages(50);
+                    Simulator.printKeyCommands();
+                    msgOutputStream.resetNumOfMessages();
+                    break;
+        
                 // exit app
                 case KeyEvent.VK_ESCAPE :
                     dispatchEvent(new WindowEvent(getWindows()[0], WindowEvent.WINDOW_CLOSING));
@@ -1015,6 +1097,74 @@ public class Visualizer3D extends JFrame {
                 wakeupOn(condition);
             }
         }
+    }
+    
+    
+    /*
+     * System message logger
+     */
+    class MessageOutputStream extends OutputStream {
+        private final int strcap = 16;  // number of messages to store
+        private final int bufcap = 80; // line length limit
+        private int numOfMessages = strcap;
+        private final StringBuffer buf = new StringBuffer(bufcap);
+        private int buflen = 0;
+        private final List<String> strings = new ArrayList<String>(strcap);
+        private boolean mtx = false;
+        
+        @Override
+        public void write(int b) throws IOException {
+            char c = (char)b;
+            buf.append(c);
+            if (c == '\n' || ++buflen >= bufcap)
+                this.flush();
+        }
+        
+        @Override
+        public void flush() {
+            if (mtx)
+                return;
+            mtx = true;
+            while (strings.size() > numOfMessages)
+                strings.remove(0);
+            
+            String line = buf.toString().replaceAll("(.+)[\\r\\n]", "$1");
+            if (!line.isEmpty())
+                strings.add(line);
+            
+            buflen = 0;
+            buf.setLength(buflen);
+            mtx = false;
+        }
+        
+        public List<String> getStrings() {
+            if (mtx)
+                return new ArrayList<String>();
+            else
+                return new ArrayList<String>(strings);
+        }
+
+        public int getListLen() {
+            return strings.size();
+        }
+
+        public void clearMessages() {
+            if (!mtx)
+                strings.clear();
+        }
+
+        public int getNumOfMessages() {
+            return numOfMessages;
+        }
+
+        public void setNumOfMessages(int numOfMessages) {
+            this.numOfMessages = numOfMessages;
+        }
+
+        public void resetNumOfMessages() {
+            this.numOfMessages = strcap;
+        }
+
     }
 
 }
