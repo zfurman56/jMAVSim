@@ -17,9 +17,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedOutputStream;
+//import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -289,7 +291,7 @@ public class Visualizer3D extends JFrame {
         if (texture == null)
             System.err.println("Cannot load texture from " + fn);
         else {
-            System.out.println("Loaded texture from " + fn);
+            //System.out.println("Loaded texture from " + fn);
             texture.setEnable(true);
         }
         return texture;
@@ -704,10 +706,21 @@ public class Visualizer3D extends JFrame {
             drawg2d = drawImg.createGraphics();
 
             // load and scale compass image for overlay
-            Image img = ImageIO.read(getClass().getClassLoader().getResource(TEX_DIR + COMPASS_IMG));
-            img = img.getScaledInstance(overlayWidth, overlayWidth, Image.SCALE_SMOOTH);
+            URL file = null;
             compassOverlay = new BufferedImage(overlayWidth, overlayWidth, BufferedImage.TYPE_4BYTE_ABGR);
-            compassOverlay.createGraphics().drawImage(img,  0,  0, null);
+            
+            try {
+                file = new URL("file:./" + TEX_DIR + COMPASS_IMG);
+            } catch (MalformedURLException e) {
+                System.err.println("Error, could not load image: " + TEX_DIR + COMPASS_IMG);
+                System.err.println(e);
+            }
+            
+            if (file != null) {
+                Image img = ImageIO.read(file);
+                img = img.getScaledInstance(overlayWidth, overlayWidth, Image.SCALE_SMOOTH);
+                compassOverlay.createGraphics().drawImage(img,  0,  0, null);
+            }
             
             // set up vector lines for HUD
             hdgLine = new Line2D.Float(0, 0, 0, halfW * -0.85f);
