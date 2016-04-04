@@ -6,6 +6,7 @@ import java.awt.*;
  * A UI panel containing the simulation report.
  */
 public class ReportPanel extends Panel {
+    private static final long serialVersionUID = 8196526002006067676L;
     private final TextArea textArea;
 
     public ReportPanel() {

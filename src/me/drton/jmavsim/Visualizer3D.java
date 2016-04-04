@@ -395,6 +395,7 @@ public class Visualizer3D extends JFrame {
         if (reportPanel == null || (on && reportPanel.isShowing()) || (!on && !reportPanel.isShowing()))
             return;
         
+        setReportPaused(!on);
         if (reportPanel.isShowing()) {
             reportPanelSize = reportPanel.getSize();
             splitPane.setLeftComponent(null);
@@ -421,6 +422,10 @@ public class Visualizer3D extends JFrame {
     public void setReportPaused(boolean pause) {
         reportPaused = pause;
         reportPanel.setIsFocusable(pause);
+        if (pause)
+            ReportUpdater.setUpdateFreq(0L);
+        else
+            ReportUpdater.resetUpdateFreq();
     }
 
     public void setShowOverlay(boolean showOverlay) {
