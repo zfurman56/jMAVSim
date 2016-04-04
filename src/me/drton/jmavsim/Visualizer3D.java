@@ -711,15 +711,15 @@ public class Visualizer3D extends JFrame {
             
             try {
                 file = new URL("file:./" + TEX_DIR + COMPASS_IMG);
-            } catch (MalformedURLException e) {
+                if (file != null) {
+                    Image img = ImageIO.read(file);
+                    img = img.getScaledInstance(overlayWidth, overlayWidth, Image.SCALE_SMOOTH);
+                    compassOverlay.createGraphics().drawImage(img,  0,  0, null);
+                }
+                
+            } catch (IOException e) {
                 System.err.println("Error, could not load image: " + TEX_DIR + COMPASS_IMG);
                 System.err.println(e);
-            }
-            
-            if (file != null) {
-                Image img = ImageIO.read(file);
-                img = img.getScaledInstance(overlayWidth, overlayWidth, Image.SCALE_SMOOTH);
-                compassOverlay.createGraphics().drawImage(img,  0,  0, null);
             }
             
             // set up vector lines for HUD
