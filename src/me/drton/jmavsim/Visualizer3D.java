@@ -44,6 +44,7 @@ public class Visualizer3D extends JFrame {
     public static final boolean   AA_ENABLED = true;  // default antialising for 3D scene
     public static final ViewTypes VIEW_TYPE  = ViewTypes.VIEW_STATIC;  // default view type
     public static final ZoomModes ZOOM_MODE  = ZoomModes.ZOOM_DYNAMIC;  // default zoom type
+    public static final int       FPS_TARGET = 60;  // target frames per second
     
     private Dimension reportPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 350), 200);
     private boolean reportPaused = false;
@@ -131,6 +132,7 @@ public class Visualizer3D extends JFrame {
 
         universe = new SimpleUniverse(canvas);
         view = universe.getViewer().getView();
+        view.setMinimumFrameCycleTime(1000 / FPS_TARGET);
         view.setBackClipDistance(WORLD_SIZE / 4);
         view.setSceneAntialiasingEnable(AA_ENABLED);
         view.setTransparencySortingPolicy(View.TRANSPARENCY_SORT_GEOMETRY);
