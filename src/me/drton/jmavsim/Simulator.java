@@ -3,12 +3,14 @@ package me.drton.jmavsim;
 import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
 import me.drton.jmavsim.Visualizer3D.ViewTypes;
+import me.drton.jmavsim.Visualizer3D.ZoomModes;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
 import me.drton.jmavsim.vehicle.Quadcopter;
 
 import org.xml.sax.SAXException;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 import javax.xml.parsers.ParserConfigurationException;
@@ -30,14 +32,16 @@ import java.util.concurrent.ScheduledFuture;;
  */
 public class Simulator implements Runnable {
 
-    public static boolean USE_SERIAL_PORT = false;
-    public static boolean COMMUNICATE_WITH_QGC = true;
-    public static boolean DO_MAG_FIELD_LOOKUP = false;
-    public static boolean SHOW_REPORT_PANEL = false;
-    public static boolean GUI_START_MAXIMIZED = false;
-    public static boolean GUI_ENABLE_AA = true;  // anti-alias on 3D scene
-    public static boolean LOG_TO_STDOUT = true;  // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
-    public static ViewTypes GUI_START_VIEW = ViewTypes.VIEW_STATIC;
+    public static boolean   USE_SERIAL_PORT       = false;  // use serial port for MAV instead of UDP 
+    public static boolean   COMMUNICATE_WITH_QGC  = true;   // open UDP port to QGC
+    public static boolean   DO_MAG_FIELD_LOOKUP   = false;  // perform online mag incl/decl lookup for current position
+    public static boolean   USE_GIMBAL            = true;   // enable gimbal modeling (optionally also define remote pitch/roll controls below)
+    public static boolean   GUI_SHOW_REPORT_PANEL = false;  // start with report panel showing
+    public static boolean   GUI_START_MAXIMIZED   = false;  // start with gui in maximized window
+    public static boolean   GUI_ENABLE_AA         = true;   // anti-alias on 3D scene
+    public static ViewTypes GUI_START_VIEW        = ViewTypes.VIEW_STATIC;
+    public static ZoomModes GUI_START_ZOOM        = ZoomModes.ZOOM_DYNAMIC;
+    public static boolean   LOG_TO_STDOUT         = true;   // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
     
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
     public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
@@ -107,7 +111,7 @@ public class Simulator implements Runnable {
     
     public volatile boolean shutdown = false;
 
-    public Simulator() throws IOException, InterruptedException, ParserConfigurationException, SAXException {
+    public Simulator() throws IOException, InterruptedException {
         
         // set up custom output handler for all System.out messages
         outputHandler = new SystemOutHandler(LOG_TO_STDOUT);
@@ -118,16 +122,41 @@ public class Simulator implements Runnable {
         LatLonAlt referencePos = DEFAULT_ORIGIN_POS;
         world.setGlobalReference(referencePos);
 
-        MAVLinkSchema schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
+        // Create environment
+        SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
+        //simpleEnvironment.setWind(new Vector3d(0.8, 2.0, 0.0));
+        simpleEnvironment.setWindDeviation(new Vector3d(6.0, 8.0, 0.00));
+        //simpleEnvironment.setGroundLevel(0.0f);
+        world.addObject(simpleEnvironment);
+
+        // Create GUI
+        System.out.println("Starting GUI...");  // this is the longest part of startup so let user know
+        visualizer = new Visualizer3D(world);
+        visualizer.setAAEnabled(GUI_ENABLE_AA);
+        if (GUI_START_MAXIMIZED)
+            visualizer.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        
+        // add GUI output stream handler for displaying messages
+        outputHandler.addOutputStream(visualizer.getOutputStream());
+        
+        MAVLinkSchema schema = null;
+        try {
+            schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
+        } catch (ParserConfigurationException | IOException | SAXException e) {
+            System.out.println("ERROR: Could not load Mavlink Schema: " + e.getLocalizedMessage());
+            shutdown = true;
+        }
 
         // Create MAVLink connections
         MAVLinkConnection connHIL = new MAVLinkConnection(world);
         world.addObject(connHIL);
         MAVLinkConnection connCommon = new MAVLinkConnection(world);
         // Don't spam ground station with HIL messages
-        connCommon.addSkipMessage(schema.getMessageDefinition("HIL_CONTROLS").id);
-        connCommon.addSkipMessage(schema.getMessageDefinition("HIL_SENSOR").id);
-        connCommon.addSkipMessage(schema.getMessageDefinition("HIL_GPS").id);
+        if (schema != null) {
+            connCommon.addSkipMessage(schema.getMessageDefinition("HIL_CONTROLS").id);
+            connCommon.addSkipMessage(schema.getMessageDefinition("HIL_SENSOR").id);
+            connCommon.addSkipMessage(schema.getMessageDefinition("HIL_GPS").id);
+        }
         world.addObject(connCommon);
 
         // Create ports
@@ -159,14 +188,6 @@ public class Simulator implements Runnable {
                 udpGCMavLinkPort.setMonitorMessageID(monitorMessageIds);
             connCommon.addNode(udpGCMavLinkPort);
         }
-
-        // Create environment
-        SimpleEnvironment simpleEnvironment = new SimpleEnvironment(world);
-
-        //simpleEnvironment.setWind(new Vector3d(0.0, 5.0, 0.0));
-        simpleEnvironment.setWindDeviation(new Vector3d(6.0, 8.0, 0.00));
-        //simpleEnvironment.setGroundLevel(0.0f);
-        world.addObject(simpleEnvironment);
 
         // Set up magnetic field deviations 
         // (do this after environment already has a reference point in case we need to look up declination manually)
@@ -200,33 +221,32 @@ public class Simulator implements Runnable {
         world.addObject(vehicle);
 
         // Put camera on vehicle with gimbal
-        if (DEFAULT_CAM_PITCH_CHAN > -1 || DEFAULT_CAM_ROLL_CHAN > -1) {
+        if (USE_GIMBAL) {
             gimbal = buildGimbal();
             world.addObject(gimbal);
-        }
-        
-        // Create 3D visualizer (GUI)
-        visualizer = new Visualizer3D(world);
-        visualizer.setAAEnabled(GUI_ENABLE_AA);
-        visualizer.setHilSystem(hilSystem);
-        visualizer.setVehicleViewObject(vehicle);
-        if (gimbal != null)
             visualizer.setGimbalViewObject(gimbal);
-        if (GUI_START_MAXIMIZED)
-            visualizer.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        
-        // set default view
-        visualizer.setViewType(GUI_START_VIEW);
+        }
 
         // Create simulation report updater
         world.addObject(new ReportUpdater(world, visualizer));
-        visualizer.toggleReportPanel(SHOW_REPORT_PANEL);
-        
-        // add GUI output stream handler for displaying messages
-        outputHandler.addOutputStream(visualizer.getOutputStream());
 
+        visualizer.addWorldModels();
+        visualizer.setHilSystem(hilSystem);
+        visualizer.setVehicleViewObject(vehicle);
+        
+        // set default view and zoom mode
+        visualizer.setViewType(GUI_START_VIEW);
+        visualizer.setZoomMode(GUI_START_ZOOM);
+        visualizer.toggleReportPanel(GUI_SHOW_REPORT_PANEL);
+        
         // Open ports
-        autopilotMavLinkPort.open();
+        try {
+            autopilotMavLinkPort.open();
+        }
+        catch (IOException e) {
+            System.out.println("ERROR: Failed to open MAV port: " + e.getLocalizedMessage());
+//            shutdown = true;
+        }
 
         if (autopilotType == "px4" && autopilotMavLinkPort instanceof SerialMAVLinkPort) {
             // Special handling for PX4: Start MAVLink instance
@@ -234,9 +254,15 @@ public class Simulator implements Runnable {
             port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
         }
 
-        if (COMMUNICATE_WITH_QGC)
-            udpGCMavLinkPort.open();
-
+        if (COMMUNICATE_WITH_QGC) {
+            try {
+                udpGCMavLinkPort.open();
+            }
+            catch (IOException e) {
+                System.out.println("ERROR: Failed to open UDP link to QGC: " + e.getLocalizedMessage());
+            }
+        }
+        
         thisHandle = executor.scheduleAtFixedRate(this, 0, sleepInterval, TimeUnit.MICROSECONDS);
         
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -275,7 +301,7 @@ public class Simulator implements Runnable {
         System.exit(0);
     }
 
-    private AbstractMulticopter buildMulticopter() throws IOException {
+    private AbstractMulticopter buildMulticopter() {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
         AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "default", 
                                                         0.33 / 2, 4.0, 0.05, 0.005, gc);
@@ -301,7 +327,7 @@ public class Simulator implements Runnable {
     }
 
     // 200mm, 250g small quad X "Leora" with AutoQuad style layout (clockwise from front)
-    private AbstractMulticopter buildAQ_leora() throws IOException {
+    private AbstractMulticopter buildAQ_leora() {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
         AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
         
@@ -331,7 +357,7 @@ public class Simulator implements Runnable {
         return vehicle;
     }
 
-    private CameraGimbal2D buildGimbal() throws IOException {
+    private CameraGimbal2D buildGimbal() {
         CameraGimbal2D g = new CameraGimbal2D(world, DEFAULT_GIMBAL_MODEL);
         g.setBaseObject(vehicle);
         g.setPitchChannel(DEFAULT_CAM_PITCH_CHAN);
@@ -412,7 +438,8 @@ public class Simulator implements Runnable {
     public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
     public final static String MAG_STRING = "-automag";
     public final static String REP_STRING = "-rep";
-    public final static String GUI_NO_AA_STRING = "-no-aa";
+    public final static String GUI_AA_STRING = "[-no]-aa";
+    public final static String GIMBAL_STRING = "[-no]-gimbal";
     public final static String GUI_MAX_STRING = "-max";
     public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
     public final static String AP_STRING = "-ap <autopilot_type>";
@@ -420,10 +447,10 @@ public class Simulator implements Runnable {
     public final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
     public final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
     public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " + 
-                                              "[" + QGC_STRING + "] [" + GUI_NO_AA_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
+                                              "[" + QGC_STRING + "] [" + GIMBAL_STRING + "] [" + GUI_AA_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
-            throws InterruptedException, IOException, ParserConfigurationException, SAXException {
+            throws InterruptedException, IOException {
 
         int i = 0;
         while (i < args.length) {
@@ -590,11 +617,17 @@ public class Simulator implements Runnable {
             } else if (arg.equals("-automag")) {
                 DO_MAG_FIELD_LOOKUP = true;
             } else if (arg.equals("-rep")) {
-                SHOW_REPORT_PANEL = true;
+                GUI_SHOW_REPORT_PANEL = true;
             } else if (arg.equals("-max")) {
                 GUI_START_MAXIMIZED = true;
+            } else if (arg.equals("-aa")) {
+                GUI_ENABLE_AA = true;
             } else if (arg.equals("-no-aa")) {
                 GUI_ENABLE_AA = false;
+            } else if (arg.equals("-gimbal")) {
+                USE_GIMBAL = true;
+            } else if (arg.equals("-no-gimbal")) {
+                USE_GIMBAL = false;
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
@@ -604,11 +637,11 @@ public class Simulator implements Runnable {
         if (i != args.length) {
             System.err.println("Usage: " + USAGE_STRING);
             return;
-        } else { 
-            System.out.println("Options parsed, starting Sim."); 
         }
-
-        new Simulator();
+        
+        System.out.println("Options parsed, starting Sim.");
+        
+        SwingUtilities.invokeLater(new Simulator());
     }
 
     public static void handleHelpFlag() {
@@ -619,7 +652,8 @@ public class Simulator implements Runnable {
         System.out.println(UDP_STRING);
         System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress + ":" + autopilotPort + ").");
         System.out.println(SERIAL_STRING);
-        System.out.println("      Open a serial connection to the MAV (default: " + serialPath + " @ " + serialBaudRate + ").");
+        System.out.println("      Open a serial connection to the MAV instead of UDP.");
+        System.out.println("      Default path/baud is: " + serialPath + " " + serialBaudRate + "");
         System.out.println(SPEED_STRING);
         System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency");
         System.out.println("      of the HIL_SENSOR messages. Default is " + DEFAULT_SIM_SPEED + " Hz");
@@ -627,18 +661,20 @@ public class Simulator implements Runnable {
         System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "");
         System.out.println(MAG_STRING);
         System.out.println("      Attempt automatic magnetic field inclination/declination lookup");
-        System.out.println("      for starting position via NOAA Web service.");
+        System.out.println("      for starting global position via NOAA Web service.");
         System.out.println(QGC_STRING);
         System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "");
-        System.out.println(GUI_NO_AA_STRING);
-        System.out.println("      Disable anti-aliasing on 3D scene (may improve performance).");
+        System.out.println(GIMBAL_STRING);
+        System.out.println("      Enable/Disable the gimbal model. Default is '" + USE_GIMBAL +"'.");
+        System.out.println(GUI_AA_STRING);
+        System.out.println("      Enable/Disable anti-aliasing on 3D scene. Default is '" + GUI_ENABLE_AA +"'.");
         System.out.println(GUI_VIEW_STRING);
         System.out.println("      Start with the specified view type. One of: 'fpv', 'grnd', or 'gmbl'.");
         System.out.println("      Default is '" + viewType +"'.");
         System.out.println(GUI_MAX_STRING);
         System.out.println("      Start with the visualizer GUI window maximized.");
         System.out.println(REP_STRING);
-        System.out.println("      Start with data report visible (once started, use 'r' in console to toggle).");
+        System.out.println("      Start with data report visible.");
         System.out.println(PRINT_INDICATION_STRING);
         System.out.println("      Monitor (echo) all/selected MAVLink messages to the console.");
         System.out.println("      If no MsgIDs are specified, all messages are monitored.");
