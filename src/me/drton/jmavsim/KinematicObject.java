@@ -1,5 +1,7 @@
 package me.drton.jmavsim;
 
+import com.sun.j3d.loaders.IncorrectFormatException;
+import com.sun.j3d.loaders.ParsingErrorException;
 import com.sun.j3d.loaders.Scene;
 import com.sun.j3d.loaders.objectfile.ObjectFile;
 //import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
@@ -12,8 +14,7 @@ import javax.media.j3d.TransformGroup;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 
-import java.io.FileNotFoundException;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
 
 /**
@@ -53,31 +54,33 @@ public abstract class KinematicObject extends WorldObject {
      * @param modelFile file name
      * @throws java.io.FileNotFoundException
      */
-    protected void modelFromFile(String modelFile) throws FileNotFoundException {
+    protected void modelFromFile(String modelFile) {
         URL file = null;
         try {
             file = new URL("file:./" + modelFile);
-        } catch (MalformedURLException e) {
-            System.err.println(e);
-            System.exit(1);
-        }
-        ObjectFile objectFile = new ObjectFile();
-        Scene scene = objectFile.load(file);
         
-        BranchGroup bg = scene.getSceneGroup();
-        
-//        Shape3D shape = (Shape3D)bg.getChild(0);
-//        shape.setPickable(true);
-//        TransformGroup objRotate = new TransformGroup();
-//        objRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-//        objRotate.addChild(bg);
-//        MouseRotate f1=new MouseRotate();
-//        f1.setSchedulingBounds(new BoundingSphere());
-//        f1.setTransformGroup(objRotate);
-//        bg.addChild(f1);
-//        transformGroup.addChild(objRotate);
+            ObjectFile objectFile = new ObjectFile();
+            Scene scene = objectFile.load(file);
 
-        transformGroup.addChild(bg);
+//          Shape3D shape = (Shape3D)bg.getChild(0);
+//          shape.setPickable(true);
+//          TransformGroup objRotate = new TransformGroup();
+//          objRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+//          objRotate.addChild(bg);
+//          MouseRotate f1=new MouseRotate();
+//          f1.setSchedulingBounds(new BoundingSphere());
+//          f1.setTransformGroup(objRotate);
+//          bg.addChild(f1);
+//          transformGroup.addChild(objRotate);
+
+            BranchGroup bg = scene.getSceneGroup();
+            transformGroup.addChild(bg);
+            
+        } catch (IOException | IncorrectFormatException | ParsingErrorException e) {
+            System.out.println("ERROR: could not load 3D model: " + modelFile);
+            System.out.println("Error message:" + e.getLocalizedMessage());
+        }
+        
     }
 
     public BranchGroup getBranchGroup() {

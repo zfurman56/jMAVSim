@@ -5,7 +5,6 @@ import me.drton.jmavsim.World;
 
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
-import java.io.FileNotFoundException;
 
 /**
  * Generic hexacopter model.
@@ -25,10 +24,9 @@ public class Hexacopter extends AbstractMulticopter {
      * @param rotorTorque    torque at full thrust of one rotor
      * @param rotorTimeConst spin-up time of rotor
      * @param rotorsOffset   rotors positions offset from gravity center
-     * @throws FileNotFoundException if .obj model file not found
      */
     public Hexacopter(World world, String modelName, String orientation, double armLength, double rotorThrust,
-                      double rotorTorque, double rotorTimeConst, Vector3d rotorsOffset) throws FileNotFoundException {
+                      double rotorTorque, double rotorTimeConst, Vector3d rotorsOffset) {
         super(world, modelName);
         rotorPositions[0] = new Vector3d(armLength, 0.0, 0.0);
         rotorPositions[1] = new Vector3d(-armLength, 0.0, 0.0);

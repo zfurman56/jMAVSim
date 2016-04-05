@@ -3,6 +3,7 @@ package me.drton.jmavsim;
 //import com.sun.j3d.utils.geometry.Box;
 //import com.sun.j3d.utils.geometry.Cylinder;
 import com.sun.j3d.utils.geometry.Sphere;
+import com.sun.j3d.utils.image.ImageException;
 import com.sun.j3d.utils.image.TextureLoader;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 
@@ -20,7 +21,6 @@ import java.awt.image.BufferedImage;
 //import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.ArrayList;
@@ -86,7 +86,7 @@ public class Visualizer3D extends JFrame {
     private BranchGroup tmp_bGrp;
     private static final long serialVersionUID = 1L;
 
-    public Visualizer3D(World world) throws IOException {
+    public Visualizer3D(World world) {
         this.world = world;
 
         keyHandler = new KeyboardHandler();
@@ -139,6 +139,16 @@ public class Visualizer3D extends JFrame {
 
         createEnvironment();
 
+        setViewType(VIEW_TYPE);
+        setZoomMode(ZOOM_MODE);
+        setVisible(true);
+        splitPane.resetToPreferredSizes();
+        toggleReportPanel(false);
+        resetView();
+        canvas.requestFocus();
+    }
+
+    public void addWorldModels() {
         // add any models in World
         for (WorldObject object : world.getObjects()) {
             if (object instanceof KinematicObject) {
@@ -149,16 +159,8 @@ public class Visualizer3D extends JFrame {
                 }
             }
         }
-
-        setViewType(VIEW_TYPE);
-        setZoomMode(ZOOM_MODE);
-        setVisible(true);
-        splitPane.resetToPreferredSizes();
-        toggleReportPanel(false);
-        resetView();
-        canvas.requestFocus();
     }
-
+    
     private void createEnvironment() {
         BranchGroup group = new BranchGroup();
         sceneBounds = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), WORLD_SIZE);
@@ -295,13 +297,23 @@ public class Visualizer3D extends JFrame {
 
     // load image from file as a texture
     private Texture2D loadTexture(String fn) {
-        TextureLoader texLoader = new TextureLoader(fn, null);
-        Texture2D texture = (Texture2D) texLoader.getTexture();
-        if (texture == null)
-            System.err.println("Cannot load texture from " + fn);
-        else {
-            //System.out.println("Loaded texture from " + fn);
-            texture.setEnable(true);
+        TextureLoader texLoader = null;
+        Texture2D texture = new Texture2D();
+        texture.setEnable(false);
+        try {
+             texLoader = new TextureLoader(fn, null);
+        }  catch (ImageException e) {
+            System.out.println("Error, could not load texture: " + fn);
+            System.out.println("Error message:" + e.getLocalizedMessage());
+        }
+        if (texLoader != null) {
+            texture = (Texture2D) texLoader.getTexture();
+            if (texture == null)
+                System.out.println("Cannot load texture from " + fn);
+            else {
+                //System.out.println("Loaded texture from " + fn);
+                texture.setEnable(true);
+            }
         }
         return texture;
     } 
@@ -701,13 +713,14 @@ public class Visualizer3D extends JFrame {
     private class CustomCanvas3D extends Canvas3D {
         private static final long serialVersionUID = 7144426579917281131L;
         
-        private int[] overlayMargins = {10, 10};  // x, y from left bottom corner
+        private int[] overlayMargins = {10, 10};  // x, y from left/right bottom corner
         private Font font = new Font("SansSerif", Font.BOLD, 14);
-        private Font msgFont = new Font("SansSerif", Font.PLAIN, 14);
         private Color txtColor = Color.white;
         private Color hdgColor = Color.magenta;
         private Color crsColor = Color.green;
         private Color windColor = Color.blue;
+        // system messages overlay
+        private Font msgFont = new Font("SansSerif", Font.PLAIN, 14);
         private Color msgColor = new Color(255, 255, 255, 240);
         private Color msgBgColor = new Color(202, 162, 0, 60);
         
@@ -720,6 +733,9 @@ public class Visualizer3D extends JFrame {
         private Line2D.Float hdgLine;
         private Line2D.Float crsLine;
         private Line2D.Float windLine;
+        private BasicStroke crsStroke = new BasicStroke(2.5f);  // drawn last, on top
+        private BasicStroke hdgStroke = new BasicStroke(4.0f);
+        private BasicStroke wndStroke = new BasicStroke(5.5f);  // drawn first, on bottom
         private RoundRectangle2D.Float msgBg = new RoundRectangle2D.Float();
         private int[] overlaySize = new int[2];  // x, y
         private int[] messagesSize = {450, 600};  // x, y
@@ -729,7 +745,7 @@ public class Visualizer3D extends JFrame {
         private int framesCount = 0;
         private long frameTime = 0L;
 
-        public CustomCanvas3D(GraphicsConfiguration gc, Dimension windowSize, int overlayWidth) throws IOException 
+        public CustomCanvas3D(GraphicsConfiguration gc, Dimension windowSize, int overlayWidth) 
         {
             super(gc);
             g2d = this.getGraphics2D();
@@ -767,8 +783,8 @@ public class Visualizer3D extends JFrame {
                     compassOverlay.createGraphics().drawImage(img,  0,  0, null);
                 }
             } catch (IOException e) {
-                System.err.println("Error, could not load image: " + TEX_DIR + COMPASS_IMG);
-                System.err.println(e);
+                System.out.println("Error, could not load image: " + TEX_DIR + COMPASS_IMG);
+                System.out.println("Error message:" + e.getLocalizedMessage());
             }
             
             // set up vector lines for HUD
@@ -813,16 +829,17 @@ public class Visualizer3D extends JFrame {
             drawg2d.setTransform(affTrans);
             drawg2d.drawImage(compassOverlay, 0, 0, this);
 
-            // wind line
+            // wind line in relation to viewer
             vect = world.getEnvironment().getCurrentWind(viewerPosition);
             norm = Math.sqrt(vect.x * vect.x + vect.y * vect.y);
             affTrans.setToTranslation(halfW, halfW);
             affTrans.rotate(vect.x, vect.y);
             affTrans.rotate(dZ);
+            // scale length and width based on wind speed
             affTrans.scale(Math.max(Math.min(Math.abs(vect.z) * 0.5, 10.0), 1.0), Math.min(norm * 0.2, halfW * 0.85));
             drawg2d.setTransform(affTrans);
             drawg2d.setColor(windColor);
-            drawg2d.setStroke(new BasicStroke(5.5f));
+            drawg2d.setStroke(wndStroke);
             drawg2d.draw(windLine);
 
             if (vehicleViewObject != null) {
@@ -833,7 +850,7 @@ public class Visualizer3D extends JFrame {
                 affTrans.rotate(z + dZ);
                 drawg2d.setTransform(affTrans);
                 drawg2d.setColor(hdgColor);
-                drawg2d.setStroke(new BasicStroke(4f));
+                drawg2d.setStroke(hdgStroke);
                 drawg2d.draw(hdgLine);
 
                 // course over ground line
@@ -842,15 +859,18 @@ public class Visualizer3D extends JFrame {
                 norm = Math.sqrt(vect.x * vect.x + vect.y * vect.y);
                 affTrans.setToTranslation(halfW, halfW);
                 affTrans.rotate(z + dZ);
+                // scale length and width based on vehicle speed
                 affTrans.scale(Math.max(Math.min(Math.abs(vect.z) * 0.5, 10.0), 1.0), Math.min(norm * 0.2, halfW * 0.85));
                 drawg2d.setTransform(affTrans);
                 drawg2d.setColor(crsColor);
-                drawg2d.setStroke(new BasicStroke(2.5f));
+                drawg2d.setStroke(crsStroke);
                 drawg2d.draw(crsLine);
             }
             
-            // now draw the composed image on the main J3DGraphics2D 
+            // now draw the composed compass + vectors image on the main J3DGraphics2D 
             g2d.drawImage(drawImg, x, y, this);
+            
+            // draw all HUD text items
             
             g2d.setFont(font);
             g2d.setColor(txtColor);
@@ -879,12 +899,10 @@ public class Visualizer3D extends JFrame {
                 y = this.getHeight() - h - overlayMargins[1];
                 msgBg.setRoundRect(x, y, messagesSize[0], h, 15, 15);
     
-//                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
                 g2d.setColor(msgBgColor);
                 g2d.draw(msgBg);
                 g2d.fill(msgBg);
-//                g2d.setComposite(AlphaComposite.Src);
-    
+                
                 x += 10;
                 y += msgLineHeight;
                 g2d.setFont(msgFont);
@@ -1154,6 +1172,7 @@ public class Visualizer3D extends JFrame {
         }
 
         @Override
+        @SuppressWarnings("rawtypes")
         public void processStimulus(Enumeration wakeup) {
             Object w;
             while (wakeup.hasMoreElements()) {
@@ -1189,7 +1208,7 @@ public class Visualizer3D extends JFrame {
         
         @Override
         public void flush() {
-            if (mtx)
+            if (mtx)  // do not block
                 return;
             mtx = true;
             while (strings.size() > numOfMessages)
@@ -1205,10 +1224,10 @@ public class Visualizer3D extends JFrame {
         }
         
         public List<String> getStrings() {
-            if (mtx)
+            if (mtx)  // do not block
                 return new ArrayList<String>();
-            else
-                return new ArrayList<String>(strings);
+
+            return new ArrayList<String>(strings);
         }
 
         public int getListLen() {

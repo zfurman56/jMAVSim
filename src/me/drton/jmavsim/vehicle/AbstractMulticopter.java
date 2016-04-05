@@ -5,7 +5,6 @@ import me.drton.jmavsim.Rotor;
 import me.drton.jmavsim.World;
 
 import javax.vecmath.Vector3d;
-import java.io.FileNotFoundException;
 
 /**
  * Abstract multicopter class. Does all necessary calculations for multirotor with any placement of rotors.
@@ -16,7 +15,7 @@ public abstract class AbstractMulticopter extends AbstractVehicle {
     private double dragRotate = 0.0;
     protected Rotor[] rotors;
 
-    public AbstractMulticopter(World world, String modelName) throws FileNotFoundException {
+    public AbstractMulticopter(World world, String modelName) {
         super(world, modelName);
         rotors = new Rotor[getRotorsNum()];
         for (int i = 0; i < getRotorsNum(); i++) {

@@ -14,7 +14,7 @@ import java.nio.channels.ByteChannel;
  * User: ton Date: 28.11.13 Time: 23:30
  */
 public class SerialMAVLinkPort extends MAVLinkPort {
-    private MAVLinkSchema schema;
+    private MAVLinkSchema schema = null;
     private SerialPort serialPort = null;
     private ByteChannel channel = null;
     private MAVLinkStream stream = null;
@@ -50,6 +50,7 @@ public class SerialMAVLinkPort extends MAVLinkPort {
             serialPort.openPort();
             serialPort.setParams(baudRate, dataBits, stopBits, parity);
         } catch (SerialPortException e) {
+            serialPort = null;
             throw new IOException(e);
         }
         channel = new ByteChannel() {
@@ -57,16 +58,17 @@ public class SerialMAVLinkPort extends MAVLinkPort {
             public int read(ByteBuffer buffer) throws IOException {
                 try {
                     int available = serialPort.getInputBufferBytesCount();
-                    if (available <= 0) {
+                    if (available <= 0)
                         return 0;
-                    }
+
                     byte[] b = serialPort.readBytes(Math.min(available,buffer.remaining()));
                     if (b != null) {
                         buffer.put(b);
                         return b.length;
-                    } else {
-                        return 0;
                     }
+                    
+                    return 0;
+
                 } catch (SerialPortException e) {
                     throw new IOException(e);
                 }
