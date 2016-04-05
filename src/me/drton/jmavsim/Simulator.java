@@ -248,12 +248,6 @@ public class Simulator implements Runnable {
 //            shutdown = true;
         }
 
-        if (autopilotType == "px4" && autopilotMavLinkPort instanceof SerialMAVLinkPort) {
-            // Special handling for PX4: Start MAVLink instance
-            SerialMAVLinkPort port = (SerialMAVLinkPort) autopilotMavLinkPort;
-            port.sendRaw("\nsh /etc/init.d/rc.usb\n".getBytes());
-        }
-
         if (COMMUNICATE_WITH_QGC) {
             try {
                 udpGCMavLinkPort.open();
