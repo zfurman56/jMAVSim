@@ -299,14 +299,16 @@ public class Simulator implements Runnable {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
         AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "default", 
                                                         0.33 / 2, 4.0, 0.05, 0.005, gc);
-        vehicle.setMass(0.8);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
         I.m00 = 0.005;  // X
         I.m11 = 0.005;  // Y
         I.m22 = 0.009;  // Z
         vehicle.setMomentOfInertia(I);
+        vehicle.setMass(0.8);
+        vehicle.setDragMove(0.01);
         SimpleSensors sensors = new SimpleSensors();
+        sensors.setGPSInterval(50);
         sensors.setGPSDelay(200);
         sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
         sensors.setNoise_Acc(0.05f);
@@ -314,7 +316,6 @@ public class Simulator implements Runnable {
         sensors.setNoise_Mag(0.005f);
         sensors.setNoise_Prs(0.0f);
         vehicle.setSensors(sensors);
-        vehicle.setDragMove(0.02);
         //v.setDragRotate(0.1);
         
         return vehicle;
