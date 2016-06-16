@@ -21,6 +21,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
     private long initTime = 0;
     private long initDelay = 500;
     private boolean zeroBased = true;
+    private boolean modeEncodesGroup = false;
 
     /**
      * Create MAVLinkHILSimulator, MAVLink system that sends simulated sensors to autopilot and passes controls from
@@ -47,6 +48,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
             // Get the system arming state if the mode
             // field is valid
             int mode = msg.getInt("mode");
+            int nav_mode = msg.getInt("nav_mode");
             boolean armed = true;
 
             if (mode != 0) {
@@ -57,14 +59,18 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                 }
             }
 
-            // If the range is -1..+1 for motors, adjust it here
-            for (int i = 0; i < control.size(); i++) {
-                if (!zeroBased) {
-                    control.set(i, (control.get(i) + 1.0) / 2.0);
-                }
-            }
+            // Ignore all other output groups than the first
+            if (!modeEncodesGroup || nav_mode == 0) {
 
-            vehicle.setControl(control);
+                // If the range is -1..+1 for motors, adjust it here
+                for (int i = 0; i < control.size(); i++) {
+                    if (!zeroBased) {
+                        control.set(i, (control.get(i) + 1.0) / 2.0);
+                    }
+                }
+
+                vehicle.setControl(control);
+            }
 
         } else if ("HEARTBEAT".equals(msg.getMsgName())) {
             if (!gotHeartBeat && !stopped) {
@@ -88,6 +94,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
             }
             if (msg.getInt("autopilot") == 12) {
                 zeroBased = false;
+                modeEncodesGroup = true;
             }
         } else if ("STATUSTEXT".equals(msg.getMsgName())) {
             System.out.println("MSG: " + msg.getString("text"));
