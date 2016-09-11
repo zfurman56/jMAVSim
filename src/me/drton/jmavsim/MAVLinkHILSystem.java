@@ -182,6 +182,13 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
         sendMessage(msg_sensor);
 
+        MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE", sysId, componentId);
+        msg_hil_state.set("time_usec", tu);
+        msg_hil_state.set("roll", vehicle.attitude.getY());
+        msg_hil_state.set("pitch", vehicle.attitude.getX());
+        msg_hil_state.set("yaw", vehicle.attitude.getZ());
+        sendMessage(msg_hil_state);
+
         // GPS
         if (sensors.isGPSUpdated()) {
             GNSSReport gps = sensors.getGNSS();
