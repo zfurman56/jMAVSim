@@ -306,7 +306,7 @@ public class Simulator implements Runnable {
         I.m11 = 0.005;  // Y
         I.m22 = 0.009;  // Z
         vehicle.setMomentOfInertia(I);
-        vehicle.setMass(1.0); // mass of the vehicle, too light the vehicle will start climbing on arm
+        vehicle.setMass(0.8);
         vehicle.setDragMove(0.01);
         SimpleSensors sensors = new SimpleSensors();
         sensors.setGPSInterval(50);
