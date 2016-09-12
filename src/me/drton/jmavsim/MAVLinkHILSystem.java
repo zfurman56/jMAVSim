@@ -185,7 +185,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
 
         MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE_QUATERNION", sysId, componentId);
         msg_hil_state.set("time_usec", tu);
-        float[] q = RotationConversion.quaternionByEulerAngles(vehicle.attitude);
+        Float[] q = RotationConversion.quaternionByEulerAngles(vehicle.attitude);
         msg_hil_state.set("attitude_quaternion", q);
         sendMessage(msg_hil_state);
 
