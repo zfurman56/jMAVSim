@@ -1,10 +1,11 @@
 package me.drton.jmavsim;
 
+import me.drton.jmavlib.conversion.RotationConversion;
 import me.drton.jmavlib.mavlink.MAVLinkMessage;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
 import me.drton.jmavsim.vehicle.AbstractVehicle;
 
-import javax.vecmath.Vector3d;
+import javax.vecmath.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -182,11 +183,15 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
         sendMessage(msg_sensor);
 
-        MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE", sysId, componentId);
+        MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE_QUATERNION", sysId, componentId);
         msg_hil_state.set("time_usec", tu);
-        msg_hil_state.set("roll", vehicle.attitude.getY());
-        msg_hil_state.set("pitch", vehicle.attitude.getX());
-        msg_hil_state.set("yaw", vehicle.attitude.getZ());
+        double[] R = RotationConversion.rotationMatrixByEulerAngles(vehicle.attitude.getX(), vehicle.attitude.getY(), vehicle.attitude.getZ());
+        Matrix3d Rd = new Matrix3d(R);
+        Quat4d q4d = new Quat4d();
+        q4d.set(Rd);
+        Quat4f q4f = new Quat4f(q4d);
+        float[] q = new float[]{q4f.getW(), q4f.getX(), q4f.getY(), q4f.getZ() };
+        msg_hil_state.set("attitude_quaternion", q);
         sendMessage(msg_hil_state);
 
         // GPS
