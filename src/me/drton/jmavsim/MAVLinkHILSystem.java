@@ -183,11 +183,10 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         }
         sendMessage(msg_sensor);
 
-        MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE", sysId, componentId);
+        MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE_QUATERNION", sysId, componentId);
         msg_hil_state.set("time_usec", tu);
-        msg_hil_state.set("roll", (float)vehicle.attitude.getY());
-        msg_hil_state.set("pitch", (float)vehicle.attitude.getX());
-        msg_hil_state.set("yaw", (float)vehicle.attitude.getZ());
+        float[] q = RotationConversion.quaternionByEulerAngles(vehicle.attitude);
+        msg_hil_state.set("attitude_quaternion", q);
         sendMessage(msg_hil_state);
 
         // GPS
