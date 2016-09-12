@@ -190,7 +190,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         Quat4d q4d = new Quat4d();
         q4d.set(Rd);
         Quat4f q4f = new Quat4f(q4d);
-        float[] q = new float[]{q4f.getW(), q4f.getX(), q4f.getY(), q4f.getZ() };
+        Float[] q = new Float[]{q4f.getW(), q4f.getX(), q4f.getY(), q4f.getZ() };
         msg_hil_state.set("attitude_quaternion", q);
         sendMessage(msg_hil_state);
 
