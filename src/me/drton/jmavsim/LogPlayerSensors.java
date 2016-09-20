@@ -3,7 +3,7 @@ package me.drton.jmavsim;
 import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.log.FormatErrorException;
 import me.drton.jmavlib.log.LogReader;
-import me.drton.jmavlib.log.PX4LogReader;
+import me.drton.jmavlib.log.px4.PX4LogReader;
 
 import javax.vecmath.Vector3d;
 import java.io.EOFException;
