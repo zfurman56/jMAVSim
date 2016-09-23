@@ -154,13 +154,20 @@ public abstract class KinematicObject extends WorldObject {
         
         rotation.rotX(0);
     }
-    
+
     public static Vector3d utilMatrixToEulers(Matrix3d m) {
         Vector3d tv = new Vector3d();
-        tv.y = Math.atan2(m.m21, m.m22);
+        tv.x = Math.atan2(m.m21, m.m22);
+        tv.y = Math.asin(-m.m20);
         tv.z = Math.atan2(m.m10, m.m00);
-        if (Math.abs(Math.cos(tv.y)) > 0.002)
-            tv.x = Math.atan2(-m.m20, Math.sqrt(m.m21 * m.m21 + m.m22 * m.m22));
+        
+        if (Math.abs(tv.y - Math.PI/2) < 1e-3) {
+            tv.x = 0;
+            tv.z = Math.atan2(m.m12, m.m02);
+        } else if (Math.abs(tv.y + Math.PI/2) < 1e-3) {
+            tv.x = 0;
+            tv.z = Math.atan2(-m.m12, -m.m02);
+        }
         return tv;
     }
 }
