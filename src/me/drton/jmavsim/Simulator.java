@@ -47,7 +47,6 @@ public class Simulator implements Runnable {
     public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
     public static final String DEFAULT_AUTOPILOT_TYPE = "generic";  // eg. "px4" or "aq"
     public static final int    DEFAULT_AUTOPILOT_PORT = 14560;
-    public static final int    DEFAULT_QGC_BIND_PORT = 0;
     public static final int    DEFAULT_QGC_PEER_PORT = 14550;
     public static final String DEFAULT_SERIAL_PATH = "/dev/tty.usbmodem1";
     public static final int    DEFAULT_SERIAL_BAUD_RATE = 230400;
@@ -89,7 +88,6 @@ public class Simulator implements Runnable {
     private static String autopilotIpAddress = LOCAL_HOST;
     private static int autopilotPort = DEFAULT_AUTOPILOT_PORT;
     private static String qgcIpAddress = LOCAL_HOST;
-    private static int qgcBindPort = DEFAULT_QGC_BIND_PORT;
     private static int qgcPeerPort = DEFAULT_QGC_PEER_PORT;
     private static String serialPath = DEFAULT_SERIAL_PATH;
     private static int serialBaudRate = DEFAULT_SERIAL_BAUD_RATE;
@@ -169,7 +167,7 @@ public class Simulator implements Runnable {
         } else {
             UDPMavLinkPort port = new UDPMavLinkPort(schema);
             //port.setDebug(true);
-            port.setup(0, autopilotIpAddress, autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
+            port.setup(autopilotIpAddress, autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
             // monitor certain mavlink messages.
             if (monitorMessage)
                 port.setMonitorMessageID(monitorMessageIds);
@@ -183,7 +181,7 @@ public class Simulator implements Runnable {
         udpGCMavLinkPort = new UDPMavLinkPort(schema);
         //udpGCMavLinkPort.setDebug(true);
         if (COMMUNICATE_WITH_QGC) {
-            udpGCMavLinkPort.setup(qgcBindPort, qgcIpAddress, qgcPeerPort);
+            udpGCMavLinkPort.setup(qgcIpAddress, qgcPeerPort);
             //udpGCMavLinkPort.setDebug(true);
             if (monitorMessage && USE_SERIAL_PORT)
                 udpGCMavLinkPort.setMonitorMessageID(monitorMessageIds);
@@ -651,7 +649,7 @@ public class Simulator implements Runnable {
         System.out.println("      Attempt automatic magnetic field inclination/declination lookup");
         System.out.println("      for starting global position via NOAA Web service.");
         System.out.println(QGC_STRING);
-        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + " bind:" + qgcBindPort + "");
+        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + "");
         System.out.println(GIMBAL_STRING);
         System.out.println("      Enable/Disable the gimbal model. Default is '" + USE_GIMBAL +"'.");
         System.out.println(GUI_AA_STRING);
