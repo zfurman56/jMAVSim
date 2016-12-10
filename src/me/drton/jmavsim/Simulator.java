@@ -300,7 +300,7 @@ public class Simulator implements Runnable {
     }
 
     private Rocket buildRocket() {
-        Rocket vehicle = new Rocket(world, DEFAULT_VEHICLE_MODEL);
+        Rocket vehicle = new Rocket(world, "models/rocket.obj");
         Matrix3d I = new Matrix3d();
         // Moments of inertia
         I.m00 = 0.005;  // X
