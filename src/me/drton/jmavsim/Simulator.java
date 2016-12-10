@@ -5,6 +5,7 @@ import me.drton.jmavlib.mavlink.MAVLinkSchema;
 import me.drton.jmavsim.Visualizer3D.ViewTypes;
 import me.drton.jmavsim.Visualizer3D.ZoomModes;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
+import me.drton.jmavsim.vehicle.Rocket;
 import me.drton.jmavsim.vehicle.Quadcopter;
 
 import org.xml.sax.SAXException;
@@ -98,7 +99,7 @@ public class Simulator implements Runnable {
     private static boolean monitorMessage = false;
 
     private Visualizer3D visualizer;
-    private AbstractMulticopter vehicle;
+    private Rocket vehicle;
     private CameraGimbal2D gimbal;
     private MAVLinkHILSystem hilSystem;
     private MAVLinkPort autopilotMavLinkPort;
@@ -209,10 +210,12 @@ public class Simulator implements Runnable {
         }
 
         // Create vehicle with sensors
-        if (autopilotType == "aq")
-            vehicle = buildAQ_leora();
-        else
-            vehicle = buildMulticopter();
+        // if (autopilotType == "aq")
+        //     vehicle = buildAQ_leora();
+        // else
+        //     vehicle = buildMulticopter();
+
+        vehicle = buildRocket();
 
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
@@ -294,6 +297,30 @@ public class Simulator implements Runnable {
         }
         
         System.exit(0);
+    }
+
+    private Rocket buildRocket() {
+        Rocket vehicle = new Rocket(world, DEFAULT_VEHICLE_MODEL);
+        Matrix3d I = new Matrix3d();
+        // Moments of inertia
+        I.m00 = 0.005;  // X
+        I.m11 = 0.005;  // Y
+        I.m22 = 0.009;  // Z
+        vehicle.setMomentOfInertia(I);
+        vehicle.setMass(0.625);
+        vehicle.setDragMove(0.0011);
+        SimpleSensors sensors = new SimpleSensors();
+        sensors.setGPSInterval(50);
+        sensors.setGPSDelay(200);
+        sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
+        sensors.setNoise_Acc(0.05f);
+        sensors.setNoise_Gyo(0.01f);
+        sensors.setNoise_Mag(0.005f);
+        sensors.setNoise_Prs(0.0f);
+        vehicle.setSensors(sensors);
+        //v.setDragRotate(0.1);
+        
+        return vehicle;
     }
 
     private AbstractMulticopter buildMulticopter() {
