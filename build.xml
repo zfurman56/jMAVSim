@@ -3,7 +3,7 @@
 
     <property name="build.dir" value="out/production" />
     <property name="classes.dir" value="${build.dir}/jMAVSim"/>
-    <property name="resource_list" value="environment/**/*,mavlink/**/*,models/**/*" />
+    <property name="resource_list" value="environment/**/*,mavlink/**/*,rocket_engines/**/*,models/**/*" />
 
     <path id="libsclasspath">
         <fileset dir="lib">
