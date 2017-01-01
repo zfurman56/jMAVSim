@@ -60,7 +60,7 @@ public class Rocket extends AbstractVehicle {
         if (control.size() > 0) {
             dragBrakeAngle = ((control.get(0) * 2) - 1) * (Math.PI / 2);
         }
-        Vector3d f = new Vector3d(0, 0, (dragMove * (1 + (dragGain * Math.pow(Math.sin(dragBrakeAngle), 2))) * Math.pow(airSpeed.z, 2)));
+        Vector3d f = new Vector3d(0, 0, (dragMove * (1 + (dragGain * Math.pow(Math.sin(dragBrakeAngle), 2))) * Math.pow(airSpeed.z, 2) * Math.signum(airSpeed.z)));
         return f;
     }
 }
