@@ -1,5 +1,7 @@
 package me.drton.jmavsim.vehicle;
 
+import java.util.List;
+
 import me.drton.jmavsim.ReportUtil;
 import me.drton.jmavsim.World;
 
@@ -11,6 +13,8 @@ import javax.vecmath.Vector3d;
 public class Rocket extends AbstractVehicle {
     private double dragMove = 0.0;
     private double launch_time = 0.0;
+    private double dragBrakeAngle = 0.0;
+    private int dragGain = 7;
     private RocketEngine engine = new RocketEngine("/rocket_engines/AeroTech_F52.eng");
 
     public Rocket(World world, String modelName) {
@@ -23,7 +27,7 @@ public class Rocket extends AbstractVehicle {
 
     public void launch() {
         // Launch 5 seconds in the future
-        launch_time = System.currentTimeMillis()+5000;
+        launch_time = System.currentTimeMillis()+15000;
     }
 
     @Override
@@ -52,8 +56,11 @@ public class Rocket extends AbstractVehicle {
     }
 
     protected Vector3d getAirFlowForce(Vector3d airSpeed) {
-        Vector3d f = new Vector3d(airSpeed);
-        f.scale(f.length() * dragMove);
+        List<Double> control = getControl();
+        if (control.size() > 0) {
+            dragBrakeAngle = ((control.get(0) * 2) - 1) * (Math.PI / 2);
+        }
+        Vector3d f = new Vector3d(0, 0, (dragMove * (1 + (dragGain * Math.pow(Math.sin(dragBrakeAngle), 2))) * Math.pow(airSpeed.z, 2)));
         return f;
     }
 }

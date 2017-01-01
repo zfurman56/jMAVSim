@@ -83,8 +83,6 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
                 }
             }
 
-            vehicle.setControl(control);
-
         } else if ("COMMAND_LONG".equals(msg.getMsgName())) {
             int command = msg.getInt("command");
             if (command == 511) { //MAV_CMD_SET_MESSAGE_INTERVAL
