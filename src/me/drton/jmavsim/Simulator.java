@@ -98,6 +98,8 @@ public class Simulator implements Runnable {
     private static HashSet<Integer> monitorMessageIds = new HashSet<Integer>();
     private static boolean monitorMessage = false;
 
+    private boolean reachedApogee = false;
+
     private Visualizer3D visualizer;
     private Rocket vehicle;
     private CameraGimbal2D gimbal;
@@ -393,6 +395,10 @@ public class Simulator implements Runnable {
     public void run() {
         try {
             world.update(System.currentTimeMillis());
+            if ((vehicle.velocity.z > 0) && !reachedApogee) {
+                reachedApogee = true;
+                System.out.printf("\nPeak altitude: %f\n\n", -vehicle.position.z);
+            }
         }
         catch (Exception e) {
             System.err.println("Exception in Simulator.world.update() : ");
