@@ -324,7 +324,7 @@ public class Simulator implements Runnable {
         SimpleSensors sensors = new SimpleSensors();
         sensors.setGPSInterval(50);
         sensors.setGPSDelay(200);
-        sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
+        sensors.setGPSStartTime(System.currentTimeMillis() + 300);
         sensors.setNoise_Acc(0.05f);
         sensors.setNoise_Gyo(0.01f);
         sensors.setNoise_Mag(0.005f);
