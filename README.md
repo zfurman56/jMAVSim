@@ -8,9 +8,11 @@ Simple multirotor simulator with MAVLink protocol support
 ### Installation ###
 
 Requirements:
- * Java 6 or newer (JDK, http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+ * Java 7 or newer (JDK, http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
  * Java3D and JOGL/JOAL jars, including native libs for Linux (i586/64bit), Windows (i586/64bit) and Mac OS (universal) already included in this repository, no need to install it.
+ 
+ * libvecmath-java (for ubuntu)
 
 Clone repository and initialize submodules:
 ```
