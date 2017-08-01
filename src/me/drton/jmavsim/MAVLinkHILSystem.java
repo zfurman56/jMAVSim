@@ -156,7 +156,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
 
         // Sensors
         MAVLinkMessage msg_sensor = new MAVLinkMessage(schema, "HIL_SENSOR", sysId, componentId);
-        msg_sensor.set("time_usec", tu);
+        msg_sensor.set("time_usec", 0);
         Vector3d tv = sensors.getAcc();
         msg_sensor.set("xacc", tv.x);
         msg_sensor.set("yacc", tv.y);
