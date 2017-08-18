@@ -132,4 +132,4 @@ Custom MAVLink protocols can be used, no any recompilation needed, just specify 
 MAVLinkSchema schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
 ```
 
-It's convinient to start simulator from IDE. Free and powerful "IntelliJ IDEA" IDE recommended, project files for it are already included, just open project file `jMAVSim.ipr` and right-click -> Run `Simulator`.
+It's convinient to start the simulator from IDE. Free and powerful "IntelliJ IDEA" IDE recommended, project files for it are already included, just open project file `jMAVSim.ipr` and right-click -> Run `Simulator`.

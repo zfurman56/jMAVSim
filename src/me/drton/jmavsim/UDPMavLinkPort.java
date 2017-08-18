@@ -25,8 +25,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
     private boolean monitorMessage = false;
     private HashSet<Integer> monitorMessageIDs;
     private HashMap<Integer, Integer> messageCounts = new HashMap<Integer, Integer>();
-    
-    static String[] LOCAL_HOST_TERMS = { "localhost", "127.0.0.1" };
+
     static int MONITOR_MESSAGE_RATE = 100; // rate at which to print message info
     static int TIME_PASSING = 10;         // change the print so it's visible to the user.
     static int time = 0;
@@ -50,67 +49,12 @@ public class UDPMavLinkPort extends MAVLinkPort {
         this.debug = debug;
     }
 
-    public void setup(int bindPort, String peerAddress, int peerPort) throws UnknownHostException, IOException {
+    public void setup(String peerAddress, int peerPort) throws UnknownHostException, IOException {
         this.peerPort = new InetSocketAddress(peerAddress, peerPort);
-        // If PX4 is running on localhost, we should connect on local host as well.
-        for (String term : LOCAL_HOST_TERMS) {
-            if (peerAddress.equalsIgnoreCase(term)) {
-                this.bindPort = new InetSocketAddress(term, bindPort);
-            }
-        }
-        // Otherwise, we should attempt to find the external IP address and connect over that.
-        if (this.bindPort == null) {
-            InetAddress localHostExternalIPAddress = getMyHostIPAddress();
-            this.bindPort = new InetSocketAddress(localHostExternalIPAddress, bindPort);
-        }
+        this.bindPort = new InetSocketAddress("0.0.0.0", 0);
         if (debug) {
-            System.out.println("peerAddress: " + peerAddress + ", bindAddress: " + this.bindPort.toString());
+            System.out.println("peerAddress: " + this.peerPort.toString() + ", bindAddress: " + this.bindPort.toString());
         }
-    }
-
-    /**
-     * Searches for the externally-reachable IP address for this machine. Note that if PX4 is running on
-     * a private network, this method may or may not work to setup communication.
-     *
-     * @return the best possible address found.
-     * @throws UnknownHostException
-     * @throws SocketException
-     * @throws IOException
-     */
-    private static InetAddress getMyHostIPAddress() throws UnknownHostException, SocketException, IOException {
-        InetAddress possibleAddress = null;
-        // Look over all the network interfaces for the appropriate interface.
-        Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-        while (networkInterfaces.hasMoreElements()) {
-            NetworkInterface iface = networkInterfaces.nextElement();
-            Enumeration<InetAddress> addresses = iface.getInetAddresses();
-            while (addresses.hasMoreElements()) {
-                InetAddress address = addresses.nextElement();
-                if (!address.isLoopbackAddress()) {
-                    if (address.isSiteLocalAddress()) {
-                        // probably a good one!
-                        return address;
-                    } else {
-                        // Found a non-loopback address that isn't site local.
-                        // Might be link local (private network), but probably better than nothing.
-                        possibleAddress = address;
-                        // Return the first IPV4 address we find.
-                        if(address instanceof Inet4Address) {
-                            return address;
-                        } else {
-                            System.out.println("Found a non-IPv4 address: " + address);
-                            // IPv6 may cause the system to crash
-                            possibleAddress = null;
-                        }
-                    }
-                }
-            }
-        }
-        // At this point, if we haven't found a better option, we better just take whatever Java thinks is best.
-        if (possibleAddress == null) {
-            possibleAddress = InetAddress.getLoopbackAddress();
-        }
-        return possibleAddress;
     }
 
     public void open() throws IOException {
@@ -193,7 +137,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
                 MAVLinkMessage msg = stream.read();
                 if (msg == null)
                     break;
-                if (debug) 
+                if (debug)
                     System.out.println("[update] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
                 IndicateReceivedMessage(msg.getMsgType());
                 sendMessage(msg);
