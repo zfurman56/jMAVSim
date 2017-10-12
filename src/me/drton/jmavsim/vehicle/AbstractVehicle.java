@@ -21,6 +21,7 @@ import java.util.List;
 public abstract class AbstractVehicle extends DynamicObject implements ReportingObject {
     protected List<Double> control = Collections.emptyList();
     protected Sensors sensors = null;
+    private boolean reachedApogee = false;
 
     public AbstractVehicle(World world, String modelName) {
         super(world);
@@ -134,6 +135,16 @@ public abstract class AbstractVehicle extends DynamicObject implements Reporting
         super.update(t);
         if (sensors != null) {
             sensors.update(t);
+        }
+    }
+
+    public void logApogee()
+    {
+        
+        if (velocity.z > 0 && !reachedApogee)
+        {
+            reachedApogee = true;
+            System.out.printf("\nApogee: %f\n\n", -position.z);
         }
     }
 }

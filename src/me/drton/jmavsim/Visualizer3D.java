@@ -1016,7 +1016,7 @@ public class Visualizer3D extends JFrame {
                 case KeyEvent.VK_F1 :
                     msgOutputStream.clearMessages();
                     msgOutputStream.setNumOfMessages(50);
-                    Simulator.printKeyCommands();
+                    AbstractSimulator.printKeyCommands();
                     msgOutputStream.resetNumOfMessages();
                     break;
         

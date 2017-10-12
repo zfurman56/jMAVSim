@@ -1,15 +1,13 @@
-package me.drton.jmavsim.vehicle;
+package me.zfurman.jmavsim.vehicle;
 
 import java.util.List;
 
 import me.drton.jmavsim.ReportUtil;
 import me.drton.jmavsim.World;
+import me.drton.jmavsim.vehicle.AbstractVehicle;
 
 import javax.vecmath.Vector3d;
 
-/**
- * Rocket class.
- */
 public class Rocket extends AbstractVehicle {
     private double dragMove = 0.0;
     private double launch_time = 0.0;
@@ -27,13 +25,13 @@ public class Rocket extends AbstractVehicle {
 
     public void launch() {
         // Launch 5 seconds in the future
-        launch_time = System.currentTimeMillis()+15000;
+        launch_time = System.currentTimeMillis() + 15000;
     }
 
     @Override
     protected Vector3d getForce() {
         // If the rocket hasn't started the launch sequence, start it
-        if (launch_time==0.0) {
+        if (launch_time == 0.0) {
             launch();
         }
 
