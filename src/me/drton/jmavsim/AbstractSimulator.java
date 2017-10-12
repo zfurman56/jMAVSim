@@ -28,12 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 
-import me.zfurman.vehicle.rocketrc.Rocket;
-
 /**
  * User: ton Date: 26.11.13 Time: 12:33
  */
-public class Simulator implements Runnable {
+public abstract class AbstractSimulator implements Runnable {
 
     public static boolean   USE_SERIAL_PORT       = false;  // use serial port for MAV instead of UDP
     public static boolean   COMMUNICATE_WITH_QGC  = true;   // open UDP port to QGC
@@ -55,8 +53,7 @@ public class Simulator implements Runnable {
     public static final String DEFAULT_SERIAL_PATH = "/dev/tty.usbmodem1";
     public static final int    DEFAULT_SERIAL_BAUD_RATE = 230400;
     public static final String LOCAL_HOST = "127.0.0.1";
-    public static final String DEFAULT_ROCKET_MODEL = "models/rocket.obj";
-    public static final String DEFAULT_MULTICOPTER_MODEL = "models/3dr_arducopter_quad_x.obj";
+    public static final String DEFAULT_VEHICLE_MODEL = "models/3dr_arducopter_quad_x.obj";
     public static final String DEFAULT_GIMBAL_MODEL = "models/gimbal.png";  // blank for invisible gimbal
 
     // Set global reference point
@@ -114,7 +111,7 @@ public class Simulator implements Runnable {
 
     public volatile boolean shutdown = false;
 
-    public Simulator() throws IOException, InterruptedException {
+    public AbstractSimulator() throws IOException, InterruptedException {
 
         // set up custom output handler for all System.out messages
         outputHandler = new SystemOutHandler(LOG_TO_STDOUT);
@@ -227,13 +224,7 @@ public class Simulator implements Runnable {
         }
 
        // Create vehicle with sensors
-        // if (autopilotType == "aq")
-        //     vehicle = buildAQ_leora();
-        // else
-        //     vehicle = buildMulticopter();
-
-        vehicle = buildRocket();
-        // TODO fix this and made it better...
+        vehicle = buildVehicle(world);
 
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
@@ -317,33 +308,15 @@ public class Simulator implements Runnable {
         System.exit(0);
     }
 
-    private Rocket buildRocket() {
-        Rocket vehicle = new Rocket(world, DEFAULT_ROCKET_MODEL);
-        Matrix3d I = new Matrix3d();
-        // Moments of inertia
-        I.m00 = 0.005;  // X
-        I.m11 = 0.005;  // Y
-        I.m22 = 0.009;  // Z
-        vehicle.setMomentOfInertia(I);
-        vehicle.setMass(0.625);
-        vehicle.setDragMove(0.0011);
-        SimpleSensors sensors = new SimpleSensors();
-        sensors.setGPSInterval(50);
-        sensors.setGPSDelay(200);
-        sensors.setGPSStartTime(System.currentTimeMillis() + 1000);
-        sensors.setNoise_Acc(0.05f);
-        sensors.setNoise_Gyo(0.01f);
-        sensors.setNoise_Mag(0.005f);
-        sensors.setNoise_Prs(0.0f);
-        vehicle.setSensors(sensors);
-        //v.setDragRotate(0.1);
-        
-        return vehicle;
+    protected AbstractVehicle buildVehicle(World world) {
+        if (autopilotType == "aq")
+            return buildAQ_leora(world);
+        return buildMulticopter(world);
     }
 
-    private AbstractMulticopter buildMulticopter() {
+    private AbstractMulticopter buildMulticopter(World world) {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_MULTICOPTER_MODEL, "x", "default",
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "default",
                                                         0.33 / 2, 4.0, 0.05, 0.005, gc);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
@@ -368,9 +341,10 @@ public class Simulator implements Runnable {
     }
 
     // 200mm, 250g small quad X "Leora" with AutoQuad style layout (clockwise from front)
-    private AbstractMulticopter buildAQ_leora() {
+    private AbstractMulticopter buildAQ_leora(World world) {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_MULTICOPTER_MODEL, "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "cw_fr",
+                                                        0.1, 1.35, 0.02, 0.0005, gc);
 
         Matrix3d I = new Matrix3d();
         // Moments of inertia
@@ -476,33 +450,34 @@ public class Simulator implements Runnable {
         return magField;
     }
 
-    public final static String PRINT_INDICATION_STRING = "-m [<MsgID[, MsgID]...>]";
-    public final static String UDP_STRING = "-udp <mav ip>:<mav port>";
-    public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port>";
-    public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
-    public final static String MAG_STRING = "-automag";
-    public final static String REP_STRING = "-rep";
-    public final static String GUI_AA_STRING = "[-no]-aa";
-    public final static String GIMBAL_STRING = "[-no]-gimbal";
-    public final static String GUI_MAX_STRING = "-max";
-    public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
-    public final static String AP_STRING = "-ap <autopilot_type>";
-    public final static String SPEED_STRING = "-r <Hz>";
-    public final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
-    public final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
-    public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " +
+    private final static String PRINT_INDICATION_STRING = "-m [<MsgID[, MsgID]...>]";
+    private final static String UDP_STRING = "-udp <mav ip>:<mav port>";
+    private final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port>";
+    private final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
+    private final static String MAG_STRING = "-automag";
+    private final static String REP_STRING = "-rep";
+    private final static String GUI_AA_STRING = "[-no]-aa";
+    private final static String GIMBAL_STRING = "[-no]-gimbal";
+    private final static String GUI_MAX_STRING = "-max";
+    private final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
+    private final static String AP_STRING = "-ap <autopilot_type>";
+    private final static String SPEED_STRING = "-r <Hz>";
+    private final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
+    private final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
+    private final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " +
                                               "[" + QGC_STRING + "] [" + GIMBAL_STRING + "] [" + GUI_AA_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
-    public static void main(String[] args)
-            throws InterruptedException, IOException {
+    public static void parseArguments(String... args)
+        throws InterruptedException, IOException {
 
         int i = 0;
         while (i < args.length) {
             String arg = args[i++];
             if (arg.equalsIgnoreCase("-h") || arg.equalsIgnoreCase("--help")) {
-                handleHelpFlag();
+                AbstractSimulator.handleHelpFlag();
                 return;
             }
+
             if (arg.equalsIgnoreCase("-m")) {
                 monitorMessage = true;
                 if (i < args.length) {
@@ -584,35 +559,35 @@ public class Simulator implements Runnable {
                     return;
                 }
             } else if (arg.equals("-qgc")) {
-              COMMUNICATE_WITH_QGC = true;
-              if (i == args.length) {
-                  // only arg is -qgc, so use default values.
-                  break;
-              }
-              if (i < args.length) {
-                  String nextArg = args[i++];
-                  if (nextArg.startsWith("-")) {
-                      // only turning on udp, but want to use default ports
-                      i--;
-                      continue;
-                  }
-                  try {
-                      // try to parse passed-in ports.
-                      String[] list = nextArg.split(":");
-                      if (list.length != 2) {
-                          System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(list));
-                          return;
-                      }
-                      qgcIpAddress = list[0];
-                      qgcPeerPort = Integer.parseInt(list[1]);
-                  } catch (NumberFormatException e) {
-                      System.err.println("Expected: " + QGC_STRING + ", got: " + e.toString());
-                      return;
-                  }
-              } else {
-                  System.err.println("-qgc needs an argument: " + QGC_STRING);
-                  return;
-              }
+            COMMUNICATE_WITH_QGC = true;
+            if (i == args.length) {
+                // only arg is -qgc, so use default values.
+                break;
+            }
+            if (i < args.length) {
+                String nextArg = args[i++];
+                if (nextArg.startsWith("-")) {
+                    // only turning on udp, but want to use default ports
+                    i--;
+                    continue;
+                }
+                try {
+                    // try to parse passed-in ports.
+                    String[] list = nextArg.split(":");
+                    if (list.length != 2) {
+                        System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(list));
+                        return;
+                    }
+                    qgcIpAddress = list[0];
+                    qgcPeerPort = Integer.parseInt(list[1]);
+                } catch (NumberFormatException e) {
+                    System.err.println("Expected: " + QGC_STRING + ", got: " + e.toString());
+                    return;
+                }
+            } else {
+                System.err.println("-qgc needs an argument: " + QGC_STRING);
+                return;
+            }
             } else if (arg.equals("-ap")) {
                 if (i < args.length) {
                     autopilotType = args[i++];
@@ -676,9 +651,8 @@ public class Simulator implements Runnable {
         }
 
         System.out.println("Options parsed, starting Sim.");
-
-        SwingUtilities.invokeLater(new Simulator());
     }
+
 
     public static void handleHelpFlag() {
         String viewType = (GUI_START_VIEW == ViewTypes.VIEW_FPV ? "fpv" : GUI_START_VIEW == ViewTypes.VIEW_GIMBAL ? "gmbl" : "grnd");
@@ -762,5 +736,4 @@ public class Simulator implements Runnable {
         System.out.println(" CTRL+ Manipulate - Rotate/move/increase at a higher/faster rate.");
         System.out.println("");
     }
-
 }

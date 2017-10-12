@@ -1,4 +1,4 @@
-package me.zfurman.vehicle.rocketrc;
+package me.zfurman.jmavsim.vehicle;
 
 import java.util.List;
 
