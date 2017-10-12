@@ -41,7 +41,7 @@
         <jar destfile="${build.dir}/jmavsim_run.jar">
             <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
-                <attribute name="Rsrc-Main-Class" value="me.drton.jmavsim.Simulator"/>
+                <attribute name="Rsrc-Main-Class" value="me.zfurman.jmavsim.Main"/>
                 <attribute name="Class-Path" value="."/>
                 <attribute name="Rsrc-Class-Path" value="./ annotations.jar gluegen-rt-natives-linux-amd64.jar gluegen-rt-natives-linux-i586.jar gluegen-rt-natives-macosx-universal.jar gluegen-rt-natives-windows-amd64.jar gluegen-rt-natives-windows-i586.jar gluegen-rt.jar j3dcore.jar j3dutils.jar joal-natives-linux-amd64.jar joal-natives-linux-i586.jar joal-natives-macosx-universal.jar joal-natives-windows-amd64.jar joal-natives-windows-i586.jar joal.jar jogl-all-natives-linux-amd64.jar jogl-all-natives-linux-i586.jar jogl-all-natives-macosx-universal.jar jogl-all-natives-windows-amd64.jar jogl-all-natives-windows-i586.jar jogl-all.jar jssc.jar vecmath.jar"/>
             </manifest>
