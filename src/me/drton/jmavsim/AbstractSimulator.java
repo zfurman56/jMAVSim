@@ -450,24 +450,24 @@ public abstract class AbstractSimulator implements Runnable {
         return magField;
     }
 
-    private final static String PRINT_INDICATION_STRING = "-m [<MsgID[, MsgID]...>]";
-    private final static String UDP_STRING = "-udp <mav ip>:<mav port>";
-    private final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port>";
-    private final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
-    private final static String MAG_STRING = "-automag";
-    private final static String REP_STRING = "-rep";
-    private final static String GUI_AA_STRING = "[-no]-aa";
-    private final static String GIMBAL_STRING = "[-no]-gimbal";
-    private final static String GUI_MAX_STRING = "-max";
-    private final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
-    private final static String AP_STRING = "-ap <autopilot_type>";
-    private final static String SPEED_STRING = "-r <Hz>";
-    private final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
-    private final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
-    private final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " +
+    public final static String PRINT_INDICATION_STRING = "-m [<MsgID[, MsgID]...>]";
+    public final static String UDP_STRING = "-udp <mav ip>:<mav port>";
+    public final static String QGC_STRING = "-qgc <qgc ip address>:<qgc peer port>";
+    public final static String SERIAL_STRING = "-serial [<path> <baudRate>]";
+    public final static String MAG_STRING = "-automag";
+    public final static String REP_STRING = "-rep";
+    public final static String GUI_AA_STRING = "[-no]-aa";
+    public final static String GIMBAL_STRING = "[-no]-gimbal";
+    public final static String GUI_MAX_STRING = "-max";
+    public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
+    public final static String AP_STRING = "-ap <autopilot_type>";
+    public final static String SPEED_STRING = "-r <Hz>";
+    public final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
+    public final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
+    public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " +
                                               "[" + QGC_STRING + "] [" + GIMBAL_STRING + "] [" + GUI_AA_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
-    public static void parseArguments(String... args)
+    public static void parseArguments(String[] args)
         throws InterruptedException, IOException {
 
         int i = 0;
@@ -559,35 +559,35 @@ public abstract class AbstractSimulator implements Runnable {
                     return;
                 }
             } else if (arg.equals("-qgc")) {
-            COMMUNICATE_WITH_QGC = true;
-            if (i == args.length) {
-                // only arg is -qgc, so use default values.
-                break;
-            }
-            if (i < args.length) {
-                String nextArg = args[i++];
-                if (nextArg.startsWith("-")) {
-                    // only turning on udp, but want to use default ports
-                    i--;
-                    continue;
+                COMMUNICATE_WITH_QGC = true;
+                if (i == args.length) {
+                    // only arg is -qgc, so use default values.
+                    break;
                 }
-                try {
-                    // try to parse passed-in ports.
-                    String[] list = nextArg.split(":");
-                    if (list.length != 2) {
-                        System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(list));
+                if (i < args.length) {
+                    String nextArg = args[i++];
+                    if (nextArg.startsWith("-")) {
+                        // only turning on udp, but want to use default ports
+                        i--;
+                        continue;
+                    }
+                    try {
+                        // try to parse passed-in ports.
+                        String[] list = nextArg.split(":");
+                        if (list.length != 2) {
+                            System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(list));
+                            return;
+                        }
+                        qgcIpAddress = list[0];
+                        qgcPeerPort = Integer.parseInt(list[1]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Expected: " + QGC_STRING + ", got: " + e.toString());
                         return;
                     }
-                    qgcIpAddress = list[0];
-                    qgcPeerPort = Integer.parseInt(list[1]);
-                } catch (NumberFormatException e) {
-                    System.err.println("Expected: " + QGC_STRING + ", got: " + e.toString());
+                } else {
+                    System.err.println("-qgc needs an argument: " + QGC_STRING);
                     return;
                 }
-            } else {
-                System.err.println("-qgc needs an argument: " + QGC_STRING);
-                return;
-            }
             } else if (arg.equals("-ap")) {
                 if (i < args.length) {
                     autopilotType = args[i++];
