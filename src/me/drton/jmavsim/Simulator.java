@@ -4,8 +4,8 @@ import me.drton.jmavlib.geo.LatLonAlt;
 import me.drton.jmavlib.mavlink.MAVLinkSchema;
 import me.drton.jmavsim.Visualizer3D.ViewTypes;
 import me.drton.jmavsim.Visualizer3D.ZoomModes;
+import me.drton.jmavsim.vehicle.AbstractVehicle;
 import me.drton.jmavsim.vehicle.AbstractMulticopter;
-import me.drton.jmavsim.vehicle.Rocket;
 import me.drton.jmavsim.vehicle.Quadcopter;
 
 import org.xml.sax.SAXException;
@@ -26,7 +26,9 @@ import java.util.Scanner;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;;
+import java.util.concurrent.ScheduledFuture;
+
+import me.zfurman.vehicle.rocketrc.Rocket;
 
 /**
  * User: ton Date: 26.11.13 Time: 12:33
@@ -43,6 +45,7 @@ public class Simulator implements Runnable {
     public static ViewTypes GUI_START_VIEW        = ViewTypes.VIEW_STATIC;
     public static ZoomModes GUI_START_ZOOM        = ZoomModes.ZOOM_DYNAMIC;
     public static boolean   LOG_TO_STDOUT         = true;   // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
+    public static boolean   LOG_APOGEE            = true;
 
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
     public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
@@ -52,7 +55,8 @@ public class Simulator implements Runnable {
     public static final String DEFAULT_SERIAL_PATH = "/dev/tty.usbmodem1";
     public static final int    DEFAULT_SERIAL_BAUD_RATE = 230400;
     public static final String LOCAL_HOST = "127.0.0.1";
-    public static final String DEFAULT_VEHICLE_MODEL = "models/3dr_arducopter_quad_x.obj";
+    public static final String DEFAULT_ROCKET_MODEL = "models/rocket.obj";
+    public static final String DEFAULT_MULTICOPTER_MODEL = "models/3dr_arducopter_quad_x.obj";
     public static final String DEFAULT_GIMBAL_MODEL = "models/gimbal.png";  // blank for invisible gimbal
 
     // Set global reference point
@@ -96,10 +100,8 @@ public class Simulator implements Runnable {
     private static HashSet<Integer> monitorMessageIds = new HashSet<Integer>();
     private static boolean monitorMessage = false;
 
-    private boolean reachedApogee = false;
-
     private Visualizer3D visualizer;
-    private Rocket vehicle;
+    private AbstractVehicle vehicle;
     private CameraGimbal2D gimbal;
     private MAVLinkHILSystem hilSystem;
     private MAVLinkPort autopilotMavLinkPort;
@@ -224,13 +226,14 @@ public class Simulator implements Runnable {
             simpleEnvironment.setMagField(magField);
         }
 
-        // Create vehicle with sensors
+       // Create vehicle with sensors
         // if (autopilotType == "aq")
         //     vehicle = buildAQ_leora();
         // else
         //     vehicle = buildMulticopter();
 
         vehicle = buildRocket();
+        // TODO fix this and made it better...
 
         // Create MAVLink HIL system
         // SysId should be the same as autopilot, ComponentId should be different!
@@ -315,7 +318,7 @@ public class Simulator implements Runnable {
     }
 
     private Rocket buildRocket() {
-        Rocket vehicle = new Rocket(world, "models/rocket.obj");
+        Rocket vehicle = new Rocket(world, DEFAULT_ROCKET_MODEL);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
         I.m00 = 0.005;  // X
@@ -340,7 +343,7 @@ public class Simulator implements Runnable {
 
     private AbstractMulticopter buildMulticopter() {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "default",
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_MULTICOPTER_MODEL, "x", "default",
                                                         0.33 / 2, 4.0, 0.05, 0.005, gc);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
@@ -367,7 +370,7 @@ public class Simulator implements Runnable {
     // 200mm, 250g small quad X "Leora" with AutoQuad style layout (clockwise from front)
     private AbstractMulticopter buildAQ_leora() {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_MULTICOPTER_MODEL, "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
 
         Matrix3d I = new Matrix3d();
         // Moments of inertia
@@ -408,10 +411,8 @@ public class Simulator implements Runnable {
     public void run() {
         try {
             world.update(System.currentTimeMillis());
-            if ((vehicle.velocity.z > 0) && !reachedApogee) {
-                reachedApogee = true;
-                System.out.printf("\nPeak altitude: %f\n\n", -vehicle.position.z);
-            }
+            if (LOG_APOGEE)
+                vehicle.logApogee();
         }
         catch (Exception e) {
             System.err.println("Exception in Simulator.world.update() : ");
@@ -419,6 +420,7 @@ public class Simulator implements Runnable {
             executor.shutdown();
         }
     }
+
 
     /**
      * Look up the magnetic inclination and declination for a given Lat/Lon/Alt using a NOAA Web service.
