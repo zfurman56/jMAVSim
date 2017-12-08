@@ -34,6 +34,9 @@ public class SimpleSensors implements Sensors {
     private float epvLow = 0.4f;     // final GPS vertical estimation accuracy
     private float fix3Deph = 3.0f;   // maximum h-acc for a "3D" fix
     private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
+    // gps noise
+    private float gpsNoiseStdDev = 0.05f;
+    private Vector3d randomWalkNoise = new Vector3d();
     // accuracy smoothing filters, slowly improve h/v accuracy after startup
     private Filter ephFilter = new Filter();
     private Filter epvFilter = new Filter();
@@ -179,8 +182,16 @@ public class SimpleSensors implements Sensors {
             GNSSReport gpsCurrent = new GNSSReport();
             eph = (float)ephFilter.filter(ephLow);
             epv = (float)epvFilter.filter(epvLow);
+
+            // add noise (random walk)
+            Vector3d zeroVector = new Vector3d();
+            Vector3d whiteNoise = addZeroMeanNoise(zeroVector, gpsNoiseStdDev);
+            randomWalkNoise.add(whiteNoise);
+            Vector3d noisedPos = new Vector3d(object.getPosition());
+            noisedPos.add(randomWalkNoise);
+            setGlobalPosition(noisedPos);
             
-            gpsCurrent.position = globalPosition; //LatLonAlt.fromVector3d(addZeroMeanNoise(globalPosition.toVector3d(), 0.000001));
+            gpsCurrent.position = globalPosition;
             gpsCurrent.eph = eph;
             gpsCurrent.epv = epv;
             gpsCurrent.velocity = new Vector3d(object.getVelocity());
