@@ -174,7 +174,7 @@ public class SimpleSensors implements Sensors {
     public void update(long t) {
         float eph, epv;
         setGlobalPosition(null);
-        
+
         // GPS
         if (gpsStartTime > -1 && t > gpsStartTime && gpsNext <= t) {
             gpsNext = t + gpsInterval;
@@ -198,6 +198,14 @@ public class SimpleSensors implements Sensors {
             gpsCurrent.fix = eph <= fix3Deph ? 3 : eph <= fix2Deph ? 2 : 0;
             gpsCurrent.time = System.currentTimeMillis() * 1000;
             gps = gpsDelayLine.getOutput(t, gpsCurrent);
+        }
+    }
+
+    @Override
+    public void setParameter(String name, float value) {
+        // TODO : implement the set parameters
+        if ( name == "xxx" ) {
+            gpsNoiseStdDev = value;
         }
     }
     

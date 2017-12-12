@@ -36,4 +36,6 @@ public interface Sensors {
     
     void update(long t);
 
+    void setParameter(String name, float value);
+
 }

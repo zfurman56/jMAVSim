@@ -6,6 +6,7 @@ import com.sun.j3d.utils.geometry.Sphere;
 import com.sun.j3d.utils.image.ImageException;
 import com.sun.j3d.utils.image.TextureLoader;
 import com.sun.j3d.utils.universe.SimpleUniverse;
+import me.drton.jmavsim.vehicle.AbstractVehicle;
 
 import javax.imageio.ImageIO;
 import javax.media.j3d.*;
@@ -66,6 +67,7 @@ public class Visualizer3D extends JFrame {
  
     
     private final World world;
+    private AbstractVehicle vehicle = null;
     private double currentFOV = defaultFOV;
     private float dynZoomDistance = defaultDZDistance;
     private ViewTypes viewType;
@@ -85,6 +87,7 @@ public class Visualizer3D extends JFrame {
     private MAVLinkHILSystem hilSystem;
     private JSplitPane splitPane;
     private ReportPanel reportPanel;
+    private SensorControlDialog sensorControlDialog;
     private KeyboardHandler keyHandler;
     private OutputStream outputStream;  // for receiving system output messages
     private MessageOutputStream msgOutputStream;  // for logging messages
@@ -124,6 +127,11 @@ public class Visualizer3D extends JFrame {
         reportPanel.setMinimumSize(new Dimension(50, 0));
         reportPanel.setPreferredSize(reportPanelSize);
         splitPane.setLeftComponent(reportPanel);
+
+        // Sensor Parameter Control Dialog
+        sensorControlDialog = new SensorControlDialog(this);
+        sensorControlDialog.setSize(500,500);
+        sensorControlDialog.setVisible(false);
 
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
@@ -398,6 +406,10 @@ public class Visualizer3D extends JFrame {
 //            rose.setBaseObject(object);
     }
 
+    public void setVehicle(AbstractVehicle vehicle) {
+        this.vehicle = vehicle;
+    }
+
     /**
      * Set the "gimbal" object to use for switching views.
      *
@@ -455,6 +467,21 @@ public class Visualizer3D extends JFrame {
         
         splitPane.resetToPreferredSizes();
         revalidate();
+    }
+
+    public void toggleSensorControlDialog() {
+        if (this.sensorControlDialog == null || this.vehicle == null) {
+            return;
+        }
+        else if (this.sensorControlDialog.isShowing()) {
+            sensorControlDialog.setSensor(this.vehicle.getSensors());
+            this.sensorControlDialog.setVisible(false);
+        }
+        else {
+            sensorControlDialog.setSensor(this.vehicle.getSensors());
+            this.sensorControlDialog.setVisible(true);
+        }
+
     }
     
     public void toggleReportPanel() {
@@ -1003,6 +1030,10 @@ public class Visualizer3D extends JFrame {
                 // reporting panel
                 case KeyEvent.VK_R :
                     toggleReportPanel();
+                    break;
+
+                case KeyEvent.VK_D :
+                    toggleSensorControlDialog();
                     break;
     
                 // pause/start report updates

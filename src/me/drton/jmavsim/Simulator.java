@@ -247,6 +247,7 @@ public class Simulator implements Runnable {
         visualizer.addWorldModels();
         visualizer.setHilSystem(hilSystem);
         visualizer.setVehicleViewObject(vehicle);
+        visualizer.setVehicle(vehicle);
 
         // set default view and zoom mode
         visualizer.setViewType(GUI_START_VIEW);
