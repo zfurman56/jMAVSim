@@ -39,6 +39,7 @@ public class SimpleSensors implements Sensors {
     private double randomWalkGpsX = 0.0f;
     private double randomWalkGpsY = 0.0f;
     private double randomWalkGpsZ = 0.0f;
+    private double gpsCorrelationTime = 30.0;
     private long prevUpdateTime = 0;
     // accuracy smoothing filters, slowly improve h/v accuracy after startup
     private Filter ephFilter = new Filter();
@@ -165,21 +166,21 @@ public class SimpleSensors implements Sensors {
             pos = object.getPosition();
 
         long t = System.currentTimeMillis();
-        double dt = 0.0f;
+        double dt = 0.0;
         if ( prevUpdateTime > 0 ) {
-            dt = (t - this.prevUpdateTime) * 1e-3f;
+            dt = (t - this.prevUpdateTime) * 1e-3;
         }
 
         // add noise (random walk)
-        if ( dt > 0.0f ) {
+        if ( dt > 0.0 ) {
             double sqrtDt = java.lang.Math.sqrt(dt);
             double noiseX = sqrtDt*randomNoise(gpsNoiseStdDev);
             double noiseY = sqrtDt*randomNoise(gpsNoiseStdDev);
             double noiseZ = sqrtDt*randomNoise(gpsNoiseStdDev);
 
-            this.randomWalkGpsX += noiseX;
-            this.randomWalkGpsY += noiseY;
-            this.randomWalkGpsZ += noiseZ;
+            this.randomWalkGpsX += noiseX * dt - this.randomWalkGpsX / gpsCorrelationTime;
+            this.randomWalkGpsY += noiseY * dt - this.randomWalkGpsY / gpsCorrelationTime;
+            this.randomWalkGpsZ += noiseZ * dt - this.randomWalkGpsZ / gpsCorrelationTime;
         }
 
         double noiseGpsX = pos.x + this.randomWalkGpsX;
