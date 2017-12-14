@@ -58,7 +58,7 @@ public abstract class KinematicObject extends WorldObject {
         URL file = null;
         try {
             file = new URL("file:./" + modelFile);
-        
+
             ObjectFile objectFile = new ObjectFile();
             Scene scene = objectFile.load(file);
 
@@ -75,12 +75,12 @@ public abstract class KinematicObject extends WorldObject {
 
             BranchGroup bg = scene.getSceneGroup();
             transformGroup.addChild(bg);
-            
+
         } catch (IOException | IncorrectFormatException | ParsingErrorException e) {
             System.out.println("ERROR: could not load 3D model: " + modelFile);
             System.out.println("Error message:" + e.getLocalizedMessage());
         }
-        
+
     }
 
     public BranchGroup getBranchGroup() {
@@ -151,7 +151,7 @@ public abstract class KinematicObject extends WorldObject {
         acceleration = new Vector3d();
         rotation = new Matrix3d();
         rotationRate = new Vector3d();
-        
+
         rotation.rotX(0);
     }
 
@@ -160,11 +160,11 @@ public abstract class KinematicObject extends WorldObject {
         tv.x = Math.atan2(m.m21, m.m22);
         tv.y = Math.asin(-m.m20);
         tv.z = Math.atan2(m.m10, m.m00);
-        
-        if (Math.abs(tv.y - Math.PI/2) < 1e-3) {
+
+        if (Math.abs(tv.y - Math.PI / 2) < 1e-3) {
             tv.x = 0;
             tv.z = Math.atan2(m.m12, m.m02);
-        } else if (Math.abs(tv.y + Math.PI/2) < 1e-3) {
+        } else if (Math.abs(tv.y + Math.PI / 2) < 1e-3) {
             tv.x = 0;
             tv.z = Math.atan2(-m.m12, -m.m02);
         }

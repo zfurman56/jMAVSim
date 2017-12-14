@@ -23,7 +23,7 @@ public class MAVLinkSystem extends MAVLinkNode {
     public void setHeartbeatInterval(long interval) {
         this.heartbeatInterval = interval;
     }
-    
+
     @Override
     public void handleMessage(MAVLinkMessage msg) {
     }

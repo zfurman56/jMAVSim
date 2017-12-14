@@ -42,7 +42,8 @@ public class RC2SerialInput extends MAVLinkNode {
         this.rcMax = rcMax;
     }
 
-    public void open(String portName, int baudRate, int dataBits, int stopBits, int parity) throws IOException {
+    public void open(String portName, int baudRate, int dataBits, int stopBits,
+                     int parity) throws IOException {
         serialPort = new SerialPort(portName);
         try {
             serialPort.openPort();
@@ -128,9 +129,9 @@ public class RC2SerialInput extends MAVLinkNode {
 
     private int scaleRC(double value) {
         if (value > rcTrim) {
-            return Math.min(1000, (int) ((value - rcTrim) * 1000.0 / (rcMax - rcTrim)));
+            return Math.min(1000, (int)((value - rcTrim) * 1000.0 / (rcMax - rcTrim)));
         } else {
-            return Math.max(-1000, (int) ((value - rcTrim) * 1000.0 / (rcTrim - rcMin)));
+            return Math.max(-1000, (int)((value - rcTrim) * 1000.0 / (rcTrim - rcMin)));
         }
     }
 }

@@ -21,7 +21,8 @@ public class MAVLinkControl extends MAVLinkSystem {
     private boolean sending = false;
     private long timeout = 4000;
 
-    public MAVLinkControl(MAVLinkSchema schema, int sysId, int componentId, int targetSysId, int targetComponentId) {
+    public MAVLinkControl(MAVLinkSchema schema, int sysId, int componentId, int targetSysId,
+                          int targetComponentId) {
         super(schema, sysId, componentId);
         this.targetSysId = targetSysId;
         this.targetComponentId = targetComponentId;
@@ -107,9 +108,10 @@ public class MAVLinkControl extends MAVLinkSystem {
         br.readLine();    // skip first line
         while ((line = br.readLine()) != null) {
             String[] a = line.split("[ \t]+");
-            mission.add(new MAVLinkMissionItem(Integer.parseInt(a[2]), Integer.parseInt(a[3]), Float.parseFloat(a[4]),
-                    Float.parseFloat(a[5]), Float.parseFloat(a[6]), Float.parseFloat(a[7]), Float.parseFloat(a[8]),
-                    Float.parseFloat(a[9]), Float.parseFloat(a[10]), Integer.parseInt(a[11])));
+            mission.add(new MAVLinkMissionItem(Integer.parseInt(a[2]), Integer.parseInt(a[3]),
+                                               Float.parseFloat(a[4]),
+                                               Float.parseFloat(a[5]), Float.parseFloat(a[6]), Float.parseFloat(a[7]), Float.parseFloat(a[8]),
+                                               Float.parseFloat(a[9]), Float.parseFloat(a[10]), Integer.parseInt(a[11])));
         }
         fileReader.close();
     }

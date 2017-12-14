@@ -21,8 +21,8 @@ public class LogPlayerTarget extends Target {
     private long timeStart = 0;
     private long logT = 0;
     private Vector3d positionOffset = new Vector3d();
-    private String[] posKeys = new String[]{"LPOS.X", "LPOS.Y", "LPOS.Z"};
-    private String[] velKeys = new String[]{"LPOS.VX", "LPOS.VY", "LPOS.VZ"};
+    private String[] posKeys = new String[] {"LPOS.X", "LPOS.Y", "LPOS.Z"};
+    private String[] velKeys = new String[] {"LPOS.VX", "LPOS.VY", "LPOS.VZ"};
     private boolean globalFrame = false;
     private GlobalPositionProjector projector = null;
     private Vector3d postitionPrev = new Vector3d();
@@ -79,10 +79,11 @@ public class LogPlayerTarget extends Target {
             if (logData.containsKey(posKeys[0]) &&
                     logData.containsKey(posKeys[1]) &&
                     logData.containsKey(posKeys[2])) {
-                double[] v = new double[]{
-                        ((Number) logData.get(posKeys[0])).doubleValue(),
-                        ((Number) logData.get(posKeys[1])).doubleValue(),
-                        ((Number) logData.get(posKeys[2])).doubleValue()};
+                double[] v = new double[] {
+                    ((Number) logData.get(posKeys[0])).doubleValue(),
+                    ((Number) logData.get(posKeys[1])).doubleValue(),
+                    ((Number) logData.get(posKeys[2])).doubleValue()
+                };
                 if (globalFrame) {
                     LatLonAlt latLonAlt = new LatLonAlt(v[0], v[1], v[2]);
                     if (!projector.isInited()) {
@@ -106,7 +107,7 @@ public class LogPlayerTarget extends Target {
                         logData.containsKey(velKeys[1]) &&
                         logData.containsKey(velKeys[2])) {
                     velocity.set((Float) logData.get(velKeys[0]), (Float) logData.get(velKeys[1]),
-                            (Float) logData.get(velKeys[2]));
+                                 (Float) logData.get(velKeys[2]));
                 }
             }
         }
