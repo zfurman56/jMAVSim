@@ -45,6 +45,7 @@ public class Simulator implements Runnable {
     public static ZoomModes GUI_START_ZOOM        = ZoomModes.ZOOM_DYNAMIC;
     public static boolean   LOG_TO_STDOUT         =
         true;   // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
+    public static boolean DEBUG_MODE = false;
 
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
     public static final int    DEFAULT_AUTOPILOT_SYSID =
@@ -188,10 +189,11 @@ public class Simulator implements Runnable {
             //Serial port: connection to autopilot over serial.
             SerialMAVLinkPort port = new SerialMAVLinkPort(schema);
             port.setup(serialPath, serialBaudRate, 8, 1, 0);
+            port.setDebug(DEBUG_MODE);
             autopilotMavLinkPort = port;
         } else {
             UDPMavLinkPort port = new UDPMavLinkPort(schema);
-            //port.setDebug(true);
+            port.setDebug(DEBUG_MODE);
             port.setup(autopilotIpAddress,
                        autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
             // monitor certain mavlink messages.
@@ -206,10 +208,10 @@ public class Simulator implements Runnable {
         connCommon.addNode(autopilotMavLinkPort);
         // UDP port: connection to ground station
         udpGCMavLinkPort = new UDPMavLinkPort(schema);
-        //udpGCMavLinkPort.setDebug(true);
+        udpGCMavLinkPort.setDebug(DEBUG_MODE);
         if (COMMUNICATE_WITH_QGC) {
             udpGCMavLinkPort.setup(qgcIpAddress, qgcPeerPort);
-            //udpGCMavLinkPort.setDebug(true);
+            udpGCMavLinkPort.setDebug(DEBUG_MODE);
             if (monitorMessage && USE_SERIAL_PORT) {
                 udpGCMavLinkPort.setMonitorMessageID(monitorMessageIds);
             }
@@ -657,6 +659,8 @@ public class Simulator implements Runnable {
                 USE_GIMBAL = true;
             } else if (arg.equals("-no-gimbal")) {
                 USE_GIMBAL = false;
+            } else if (arg.equals("-debug")) {
+                DEBUG_MODE = true;
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;

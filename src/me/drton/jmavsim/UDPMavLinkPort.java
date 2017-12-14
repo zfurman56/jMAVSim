@@ -64,6 +64,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
         channel.configureBlocking(false);
         channel.connect(peerPort);
         stream = new MAVLinkStream(schema, channel);
+        stream.setDebug(debug);
     }
 
     @Override
