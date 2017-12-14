@@ -35,7 +35,7 @@ public class SimpleSensors implements Sensors {
     private float fix3Deph = 3.0f;   // maximum h-acc for a "3D" fix
     private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
     // gps noise
-    private float gpsNoiseStdDev = 0.01f;
+    private float gpsNoiseStdDev = 10.f;
     private double randomWalkGpsX = 0.0;
     private double randomWalkGpsY = 0.0;
     private double randomWalkGpsZ = 0.0;
