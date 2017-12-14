@@ -36,9 +36,9 @@ public class SimpleSensors implements Sensors {
     private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
     // gps noise
     private float gpsNoiseStdDev = 0.01f;
-    private double randomWalkGpsX = 0.0f;
-    private double randomWalkGpsY = 0.0f;
-    private double randomWalkGpsZ = 0.0f;
+    private double randomWalkGpsX = 0.0;
+    private double randomWalkGpsY = 0.0;
+    private double randomWalkGpsZ = 0.0;
     private double gpsCorrelationTime = 30.0;
     private long prevUpdateTime = 0;
     // accuracy smoothing filters, slowly improve h/v accuracy after startup
