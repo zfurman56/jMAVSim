@@ -124,7 +124,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
 
     public void initMavLink() {
         // Set HIL mode
-        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
+        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId, protocolVersion);
         msg.set("target_system", sysId);
         msg.set("base_mode", 32);     // HIL, disarmed
         sendMessage(msg);
@@ -140,7 +140,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
             return;
         }
         // Send message to end HIL mode
-        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId);
+        MAVLinkMessage msg = new MAVLinkMessage(schema, "SET_MODE", sysId, componentId, protocolVersion);
         msg.set("target_system", sysId);
         msg.set("base_mode", 0);     // disarmed
         sendMessage(msg);
@@ -162,7 +162,8 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         Sensors sensors = vehicle.getSensors();
 
         // Sensors
-        MAVLinkMessage msg_sensor = new MAVLinkMessage(schema, "HIL_SENSOR", sysId, componentId);
+        MAVLinkMessage msg_sensor = new MAVLinkMessage(schema, "HIL_SENSOR", sysId, componentId,
+                                                       protocolVersion);
         msg_sensor.set("time_usec", 0);
         Vector3d tv = sensors.getAcc();
         msg_sensor.set("xacc", tv.x);
@@ -187,7 +188,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         /* ground truth */
         if (hilStateUpdateInterval != -1 && nextHilStatePub <= tu) {
             MAVLinkMessage msg_hil_state = new MAVLinkMessage(schema, "HIL_STATE_QUATERNION", sysId,
-                                                              componentId);
+                                                              componentId, protocolVersion);
             msg_hil_state.set("time_usec", tu);
 
             Float[] q = RotationConversion.quaternionByEulerAngles(vehicle.attitude);
@@ -227,7 +228,7 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
         if (sensors.isGPSUpdated()) {
             GNSSReport gps = sensors.getGNSS();
             if (gps != null && gps.position != null && gps.velocity != null) {
-                MAVLinkMessage msg_gps = new MAVLinkMessage(schema, "HIL_GPS", sysId, componentId);
+                MAVLinkMessage msg_gps = new MAVLinkMessage(schema, "HIL_GPS", sysId, componentId, protocolVersion);
                 msg_gps.set("time_usec", tu);
                 msg_gps.set("lat", (long)(gps.position.lat * 1e7));
                 msg_gps.set("lon", (long)(gps.position.lon * 1e7));
