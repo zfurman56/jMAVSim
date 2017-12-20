@@ -35,8 +35,12 @@ public class SimpleSensors implements Sensors {
     private float fix3Deph = 3.0f;   // maximum h-acc for a "3D" fix
     private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
     // gps noise
-    private float gpsNoiseStdDev = 0.05f;
-    private Vector3d randomWalkNoise = new Vector3d();
+    private float gpsNoiseStdDev = 10.f;
+    private double randomWalkGpsX = 0.0;
+    private double randomWalkGpsY = 0.0;
+    private double randomWalkGpsZ = 0.0;
+    private double gpsCorrelationTime = 30.0;
+    private long prevUpdateTime = 0;
     // accuracy smoothing filters, slowly improve h/v accuracy after startup
     private Filter ephFilter = new Filter();
     private Filter epvFilter = new Filter();
@@ -160,7 +164,32 @@ public class SimpleSensors implements Sensors {
     public void setGlobalPosition(Vector3d pos) {
         if (pos == null)
             pos = object.getPosition();
-        globalPosition = globalProjector.reproject(new double[]{pos.x, pos.y, pos.z});
+
+        long t = System.currentTimeMillis();
+        double dt = 0.0;
+        if ( prevUpdateTime > 0 ) {
+            dt = (t - this.prevUpdateTime) * 1e-3;
+        }
+
+        // add noise (random walk)
+        if ( dt > 0.0 ) {
+            double sqrtDt = java.lang.Math.sqrt(dt);
+            double noiseX = sqrtDt*randomNoise(gpsNoiseStdDev);
+            double noiseY = sqrtDt*randomNoise(gpsNoiseStdDev);
+            double noiseZ = sqrtDt*randomNoise(gpsNoiseStdDev);
+
+            this.randomWalkGpsX += noiseX * dt - this.randomWalkGpsX / gpsCorrelationTime;
+            this.randomWalkGpsY += noiseY * dt - this.randomWalkGpsY / gpsCorrelationTime;
+            this.randomWalkGpsZ += noiseZ * dt - this.randomWalkGpsZ / gpsCorrelationTime;
+        }
+
+        double noiseGpsX = pos.x + this.randomWalkGpsX;
+        double noiseGpsY = pos.y + this.randomWalkGpsY;
+        double noiseGpsZ = pos.z + this.randomWalkGpsZ;
+
+        globalPosition = globalProjector.reproject(new double[]{noiseGpsX, noiseGpsY, noiseGpsZ});
+
+        this.prevUpdateTime = t;
     }
     
     @Override
@@ -183,14 +212,6 @@ public class SimpleSensors implements Sensors {
             eph = (float)ephFilter.filter(ephLow);
             epv = (float)epvFilter.filter(epvLow);
 
-            // add noise (random walk)
-            Vector3d zeroVector = new Vector3d();
-            Vector3d whiteNoise = addZeroMeanNoise(zeroVector, gpsNoiseStdDev);
-            randomWalkNoise.add(whiteNoise);
-            Vector3d noisedPos = new Vector3d(object.getPosition());
-            noisedPos.add(randomWalkNoise);
-            setGlobalPosition(noisedPos);
-            
             gpsCurrent.position = globalPosition;
             gpsCurrent.eph = eph;
             gpsCurrent.epv = epv;
@@ -204,8 +225,12 @@ public class SimpleSensors implements Sensors {
     @Override
     public void setParameter(String name, float value) {
         // TODO : implement the set parameters
-        if ( name == "xxx" ) {
-            gpsNoiseStdDev = value;
+        if ( name == "GPSNoiseStdDev" ) {
+            this.gpsNoiseStdDev = value;
+        }
+        else if ( name == "GyroNoise" ) {
+            this.setNoise_Gyo(value);
+
         }
     }
     

@@ -13,7 +13,7 @@ public class SensorControlDialog  extends JDialog implements ActionListener {
 
 
     private JTextField gpsNoiseText = new JTextField(10);
-    private JButton gpsNoiseButton = new JButton("GPSNoise");
+    private JButton gpsNoiseButton = new JButton("GPSNoiseStdDev");
 
 
     private JTextField gyroNoiseText = new JTextField(10);
@@ -42,6 +42,8 @@ public class SensorControlDialog  extends JDialog implements ActionListener {
         add(gyroPanel);
 
         this.gpsNoiseButton.addActionListener(this);
+        this.gyroNoiseButton.addActionListener(this);
+        
 
     }
 
@@ -51,12 +53,19 @@ public class SensorControlDialog  extends JDialog implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        float value = 0.0f;
         String str = e.getActionCommand();
 
-        if ( str == "GPSNoise") {
-            System.out.println("AAA");
-            sensors.setParameter("GPSNoise", 0.001f);
+        if (str == "GPSNoiseStdDev") {
+            value = Float.parseFloat(gpsNoiseText.getText());
+            sensors.setParameter(str, value);
         }
+        else if (str == "GyroNoise") {
+            value = Float.parseFloat(gyroNoiseText.getText());
+            sensors.setParameter(str, value);
+        }
+
+        System.out.printf("%s, %f\n", str, value);
     }
 
 
