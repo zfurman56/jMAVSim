@@ -87,7 +87,7 @@ public class Visualizer3D extends JFrame {
     private MAVLinkHILSystem hilSystem;
     private JSplitPane splitPane;
     private ReportPanel reportPanel;
-    private SensorControlDialog sensorControlDialog;
+    private SensorParamDlg sensorParamDlg;
     private KeyboardHandler keyHandler;
     private OutputStream outputStream;  // for receiving system output messages
     private MessageOutputStream msgOutputStream;  // for logging messages
@@ -129,9 +129,9 @@ public class Visualizer3D extends JFrame {
         splitPane.setLeftComponent(reportPanel);
 
         // Sensor Parameter Control Dialog
-        sensorControlDialog = new SensorControlDialog(this);
-        sensorControlDialog.setSize(500,500);
-        sensorControlDialog.setVisible(false);
+        sensorParamDlg = new SensorParamDlg();
+        sensorParamDlg.setSize(400,300);
+        sensorParamDlg.setVisible(false);
 
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
@@ -470,16 +470,16 @@ public class Visualizer3D extends JFrame {
     }
 
     public void toggleSensorControlDialog() {
-        if (this.sensorControlDialog == null || this.vehicle == null) {
+        if (sensorParamDlg == null || vehicle == null) {
             return;
         }
-        else if (this.sensorControlDialog.isShowing()) {
-            sensorControlDialog.setSensor(this.vehicle.getSensors());
-            this.sensorControlDialog.setVisible(false);
+        else if (this.sensorParamDlg.isShowing()) {
+            sensorParamDlg.setSensor(this.vehicle.getSensors());
+            sensorParamDlg.setVisible(false);
         }
         else {
-            sensorControlDialog.setSensor(this.vehicle.getSensors());
-            this.sensorControlDialog.setVisible(true);
+            sensorParamDlg.setSensor(this.vehicle.getSensors());
+            sensorParamDlg.setVisible(true);
         }
 
     }

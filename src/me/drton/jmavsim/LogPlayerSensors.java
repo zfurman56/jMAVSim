@@ -157,4 +157,9 @@ public class LogPlayerSensors implements Sensors {
     @Override
     public void setParameter(String name, float value) {}
 
+    @Override
+    public float param(String name) {
+        return 0.0f;
+    }
+
 }

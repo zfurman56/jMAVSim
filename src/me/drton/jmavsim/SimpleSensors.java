@@ -224,17 +224,50 @@ public class SimpleSensors implements Sensors {
 
     @Override
     public void setParameter(String name, float value) {
-        // TODO : implement the set parameters
-        if ( name == "GPSNoiseStdDev" ) {
-            this.gpsNoiseStdDev = value;
+        if ( name == "noise_Acc" ) {
+            noise_Acc = value;
         }
-        else if ( name == "GyroNoise" ) {
-            this.setNoise_Gyo(value);
-
+        else if ( name == "noise_Gyo" ) {
+            noise_Gyo = value;
+        }
+        else if ( name == "noise_Mag" ) {
+            noise_Mag = value;
+        }
+        else if ( name == "noise_Prs" ) {
+            noise_Prs = value;
+        }
+        else if ( name == "gpsNoiseStdDev" ) {
+            gpsNoiseStdDev = value;
+        }
+        else {
+            System.out.printf("ERROR: unknown param");
         }
     }
-    
-    
+
+    @Override
+    public float param(String name) {
+        if ( name == "noise_Acc" ) {
+            return noise_Acc;
+        }
+        else if ( name == "noise_Gyo" ) {
+            return noise_Gyo;
+        }
+        else if ( name == "noise_Mag" ) {
+            return noise_Mag;
+        }
+        else if ( name == "noise_Prs" ) {
+            return noise_Prs;
+        }
+        else if ( name == "gpsNoiseStdDev" ) {
+            return gpsNoiseStdDev;
+        }
+        else {
+            System.out.printf("ERROR: unknown param");
+        }
+
+        return 0.0f;
+    }
+
     // Utility methods
 
     public double randomNoise(float stdDev) {

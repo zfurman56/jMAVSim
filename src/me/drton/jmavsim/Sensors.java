@@ -38,4 +38,6 @@ public interface Sensors {
 
     void setParameter(String name, float value);
 
+    float param(String name);
+
 }
