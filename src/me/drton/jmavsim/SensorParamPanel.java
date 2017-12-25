@@ -1,43 +1,37 @@
 package me.drton.jmavsim;
 
 import javax.swing.*;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 /**
- * @file SensorParamDlg.cpp
- * Sensor Control Parameter Dlalog
+ * @file SensorParamPanel.java
+ * Sensor Control Parameter Panel
  *
- * The dialog is used for the sensor test and analysis
+ * This panel is used for the sensor test and analysis
  *
  * @author SungTae Moon <munhoney@gmail.com>
  */
 
-
-public class SensorParamDlg extends JDialog {
-    private JPanel contentPane;
+public class SensorParamPanel extends  JPanel {
     private JSpinner accelSpinner;
     private JSpinner gyroSpinner;
-    private JSpinner gpsSpinner;
+    private JPanel mainPanel;
     private JSpinner magSpinner;
     private JSpinner presSpinner;
-    private JButton buttonOK;
+    private JSpinner gpsSpinner;
 
     protected Sensors sensors = null;
 
+    public SensorParamPanel() {
 
-    public SensorParamDlg() {
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
+        this.add(mainPanel);
 
         accelSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 1.0f, 0.01f));
         gyroSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 1.0f, 0.01f));
         gpsSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 100.0f, 1.0f));
         magSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 1.0f, 0.001f));
         presSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 1.0f, 0.01f));
-
 
         accelSpinner.addChangeListener(new ChangeListener() {
             @Override
@@ -78,6 +72,11 @@ public class SensorParamDlg extends JDialog {
                 sensors.setParameter("gpsNoiseStdDev", value.floatValue());
             }
         });
+
+    }
+
+    public JPanel panel() {
+        return mainPanel;
     }
 
     public void setSensor(Sensors sensors) {

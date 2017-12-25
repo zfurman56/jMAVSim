@@ -55,6 +55,7 @@ public class Visualizer3D extends JFrame {
     public static final int       FPS_TARGET = 60;  // target frames per second
     
     private Dimension reportPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 350), 200);
+    private Dimension sensorParamPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 250), 200);
     private boolean reportPaused = false;
     
     private int overlaySize = 260;  // width & height of compass overlay window
@@ -87,7 +88,8 @@ public class Visualizer3D extends JFrame {
     private MAVLinkHILSystem hilSystem;
     private JSplitPane splitPane;
     private ReportPanel reportPanel;
-    private SensorParamDlg sensorParamDlg;
+    private JSplitPane propertySplitPane;
+    private SensorParamPanel sensorParamPanel;
     private KeyboardHandler keyHandler;
     private OutputStream outputStream;  // for receiving system output messages
     private MessageOutputStream msgOutputStream;  // for logging messages
@@ -120,7 +122,15 @@ public class Visualizer3D extends JFrame {
         splitPane.setOneTouchExpandable(false);
         splitPane.setContinuousLayout(true);
         splitPane.setFocusable(false);
-        getContentPane().add(splitPane);
+
+        propertySplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        propertySplitPane.setOneTouchExpandable(false);
+        propertySplitPane.setContinuousLayout(true);
+        propertySplitPane.setFocusable(false);
+        propertySplitPane.setRightComponent(splitPane);
+        propertySplitPane.setDividerSize(0);
+
+        getContentPane().add(propertySplitPane);
 
         reportPanel = new ReportPanel();
         reportPanel.setFocusable(false);
@@ -128,10 +138,13 @@ public class Visualizer3D extends JFrame {
         reportPanel.setPreferredSize(reportPanelSize);
         splitPane.setLeftComponent(reportPanel);
 
-        // Sensor Parameter Control Dialog
-        sensorParamDlg = new SensorParamDlg();
-        sensorParamDlg.setSize(400,300);
-        sensorParamDlg.setVisible(false);
+        // Sensor Parameter Control Panel
+        sensorParamPanel = new SensorParamPanel();
+        sensorParamPanel.setFocusable(false);
+        sensorParamPanel.setMinimumSize(new Dimension(50, 0));
+        sensorParamPanel.setPreferredSize(sensorParamPanelSize);
+        propertySplitPane.setLeftComponent(sensorParamPanel);
+        sensorParamPanel.setVisible(false);
 
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
@@ -470,18 +483,23 @@ public class Visualizer3D extends JFrame {
     }
 
     public void toggleSensorControlDialog() {
-        if (sensorParamDlg == null || vehicle == null) {
+        if (sensorParamPanel == null || vehicle == null) {
             return;
         }
-        else if (this.sensorParamDlg.isShowing()) {
-            sensorParamDlg.setSensor(this.vehicle.getSensors());
-            sensorParamDlg.setVisible(false);
+        else if (this.sensorParamPanel.isShowing()) {
+            sensorParamPanel.setSensor(this.vehicle.getSensors());
+            sensorParamPanel.setVisible(false);
+            propertySplitPane.setLeftComponent(null);
+            propertySplitPane.setDividerSize(0);
         }
         else {
-            sensorParamDlg.setSensor(this.vehicle.getSensors());
-            sensorParamDlg.setVisible(true);
+            sensorParamPanel.setSensor(this.vehicle.getSensors());
+            sensorParamPanel.setVisible(true);
+            propertySplitPane.setLeftComponent(sensorParamPanel);
         }
 
+        propertySplitPane.resetToPreferredSizes();
+        revalidate();
     }
     
     public void toggleReportPanel() {
