@@ -68,7 +68,6 @@ public class Visualizer3D extends JFrame {
  
     
     private final World world;
-    private AbstractVehicle vehicle = null;
     private double currentFOV = defaultFOV;
     private float dynZoomDistance = defaultDZDistance;
     private ViewTypes viewType;
@@ -83,7 +82,7 @@ public class Visualizer3D extends JFrame {
     private TransformGroup viewerTransformGroup;
     private KinematicObject viewerTargetObject;
     private KinematicObject viewerPositionObject;
-    private KinematicObject vehicleViewObject;
+    private AbstractVehicle vehicleViewObject;
     private KinematicObject gimbalViewObject;
     private MAVLinkHILSystem hilSystem;
     private JSplitPane splitPane;
@@ -413,14 +412,8 @@ public class Visualizer3D extends JFrame {
      *
      * @param object
      */
-    public void setVehicleViewObject(KinematicObject object) {
+    public void setVehicleViewObject(AbstractVehicle object) {
         this.vehicleViewObject = object;
-//        if (rose != null)
-//            rose.setBaseObject(object);
-    }
-
-    public void setVehicle(AbstractVehicle vehicle) {
-        this.vehicle = vehicle;
     }
 
     /**
@@ -483,17 +476,17 @@ public class Visualizer3D extends JFrame {
     }
 
     public void toggleSensorControlDialog() {
-        if (sensorParamPanel == null || vehicle == null) {
+        if (sensorParamPanel == null || vehicleViewObject == null) {
             return;
         }
         else if (this.sensorParamPanel.isShowing()) {
-            sensorParamPanel.setSensor(this.vehicle.getSensors());
+            sensorParamPanel.setSensor(vehicleViewObject.getSensors());
             sensorParamPanel.setVisible(false);
             propertySplitPane.setLeftComponent(null);
             propertySplitPane.setDividerSize(0);
         }
         else {
-            sensorParamPanel.setSensor(this.vehicle.getSensors());
+            sensorParamPanel.setSensor(vehicleViewObject.getSensors());
             sensorParamPanel.setVisible(true);
             propertySplitPane.setLeftComponent(sensorParamPanel);
         }
