@@ -224,19 +224,19 @@ public class SimpleSensors implements Sensors {
 
     @Override
     public void setParameter(String name, float value) {
-        if ( name == "noise_Acc" ) {
+        if ( name.equals("noise_Acc") ) {
             noise_Acc = value;
         }
-        else if ( name == "noise_Gyo" ) {
+        else if ( name.equals("noise_Gyo") ) {
             noise_Gyo = value;
         }
-        else if ( name == "noise_Mag" ) {
+        else if ( name.equals("noise_Mag") ) {
             noise_Mag = value;
         }
-        else if ( name == "noise_Prs" ) {
+        else if ( name.equals("noise_Prs") ) {
             noise_Prs = value;
         }
-        else if ( name == "gpsNoiseStdDev" ) {
+        else if ( name.equals("gpsNoiseStdDev") ) {
             gpsNoiseStdDev = value;
         }
         else {
@@ -246,19 +246,19 @@ public class SimpleSensors implements Sensors {
 
     @Override
     public float param(String name) {
-        if ( name == "noise_Acc" ) {
+        if ( name.equals("noise_Acc") ) {
             return noise_Acc;
         }
-        else if ( name == "noise_Gyo" ) {
+        else if ( name.equals("noise_Gyo") ) {
             return noise_Gyo;
         }
-        else if ( name == "noise_Mag" ) {
+        else if ( name.equals("noise_Mag") ) {
             return noise_Mag;
         }
-        else if ( name == "noise_Prs" ) {
+        else if ( name.equals("noise_Prs") ) {
             return noise_Prs;
         }
-        else if ( name == "gpsNoiseStdDev" ) {
+        else if ( name.equals("gpsNoiseStdDev") ) {
             return gpsNoiseStdDev;
         }
         else {
