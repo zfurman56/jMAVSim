@@ -20,6 +20,7 @@ public class SensorParamPanel extends  JPanel {
     private JSpinner magSpinner;
     private JSpinner presSpinner;
     private JSpinner gpsSpinner;
+    private JSpinner massSpinner;
 
     protected Sensors sensors = null;
 
@@ -32,6 +33,7 @@ public class SensorParamPanel extends  JPanel {
         gpsSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 100.0f, 1.0f));
         magSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 1.0f, 0.001f));
         presSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 1.0f, 0.01f));
+        massSpinner.setModel(new SpinnerNumberModel(0.0f, 0.0f, 5.0f, 0.1f));
 
         accelSpinner.addChangeListener(new ChangeListener() {
             @Override
@@ -73,6 +75,14 @@ public class SensorParamPanel extends  JPanel {
             }
         });
 
+        massSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                Double value = (Double)massSpinner.getValue();
+                sensors.setParameter("mass", value.floatValue());
+            }
+        });
+
     }
 
     public JPanel panel() {
@@ -88,6 +98,7 @@ public class SensorParamPanel extends  JPanel {
         magSpinner.setValue(new Double(sensors.param("noise_Mag")));
         presSpinner.setValue(new Double(sensors.param("noise_Prs")));
         gpsSpinner.setValue(new Double(sensors.param("gpsNoiseStdDev")));
+        massSpinner.setValue(new Double(sensors.param("mass")));
 
     }
 

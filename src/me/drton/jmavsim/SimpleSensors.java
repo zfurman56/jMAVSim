@@ -239,6 +239,9 @@ public class SimpleSensors implements Sensors {
         else if ( name.equals("gpsNoiseStdDev") ) {
             gpsNoiseStdDev = value;
         }
+        else if ( name.equals("mass")) {
+            object.setMass((double)value);
+        }
         else {
             System.out.printf("ERROR: unknown param");
         }
@@ -260,6 +263,9 @@ public class SimpleSensors implements Sensors {
         }
         else if ( name.equals("gpsNoiseStdDev") ) {
             return gpsNoiseStdDev;
+        }
+        else if ( name.equals("mass") ) {
+            return (float)object.getMass();
         }
         else {
             System.out.printf("ERROR: unknown param");
