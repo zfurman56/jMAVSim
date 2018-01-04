@@ -24,7 +24,7 @@ public class ReportPanel extends Panel {
     public void setText(String report) {
         textArea.setText(report);
     }
-    
+
     public void setIsFocusable(boolean on) {
         textArea.setFocusable(on);
     }

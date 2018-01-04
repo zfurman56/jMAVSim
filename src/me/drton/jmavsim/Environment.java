@@ -19,7 +19,7 @@ public abstract class Environment extends WorldObject implements ReportingObject
     protected double magHIntensity;
     protected double magTIntensity;
 
-    
+
     public Environment(World world) {
         super(world);
     }
@@ -51,7 +51,7 @@ public abstract class Environment extends WorldObject implements ReportingObject
         builder.append("Wind Cur: ");
         builder.append(ReportUtil.vector2str(windCurrent));
         builder.append(newLine);
-        
+
         builder.append(newLine);
     }
 
@@ -114,10 +114,11 @@ public abstract class Environment extends WorldObject implements ReportingObject
         return g;
     }
     public void setG(Vector3d grav) {
-        if (grav == null)
+        if (grav == null) {
             g = new Vector3d();
-        else
+        } else {
             g = grav;
+        }
     }
 
     /**

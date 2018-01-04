@@ -19,7 +19,7 @@ public class SystemOutHandler {
         this.osPrintStream = System.out;
         this.os = new SystemOutHandlerOutputStream(new ArrayList<OutputStream>(1));
     }
-    
+
     public void setLogToStdOut(boolean logToStdOut) {
         this.logToStdOut = logToStdOut;
     }
@@ -31,16 +31,19 @@ public class SystemOutHandler {
     public void removeOutputStream(OutputStream os) {
         this.os.removeStream(os);
     }
-    
+
     public void start(boolean clearStreams) {
-        if (this.active)
+        if (this.active) {
             return;
+        }
 
         this.active = true;
-        if (clearStreams)
+        if (clearStreams) {
             os.clearStreams();
-        if (this.logToStdOut)
+        }
+        if (this.logToStdOut) {
             os.addStream(this.osPrintStream);
+        }
 
         System.setOut(new PrintStream(this.os));
     }
@@ -56,39 +59,44 @@ public class SystemOutHandler {
         public SystemOutHandlerOutputStream(List<OutputStream> outputStreams) {
             this.outputStreams = outputStreams;
         }
-        
+
         public void addStream(OutputStream os) {
-            if (!this.outputStreams.contains(os))
+            if (!this.outputStreams.contains(os)) {
                 this.outputStreams.add(os);
+            }
         }
 
         public void removeStream(OutputStream os) {
-            if (this.outputStreams.contains(os))
+            if (this.outputStreams.contains(os)) {
                 this.outputStreams.remove(os);
+            }
         }
-        
+
         public void clearStreams() {
             this.outputStreams.clear();
         }
 
         public void write(int b) throws IOException {
             for (OutputStream os : this.outputStreams) {
-                if (os != null)
+                if (os != null) {
                     os.write(b);
+                }
             }
         }
 
         public void flush() throws IOException {
             for (OutputStream os : this.outputStreams) {
-                if (os != null)
+                if (os != null) {
                     os.flush();
+                }
             }
         }
 
         public void close() throws IOException {
             for (OutputStream os : outputStreams) {
-                if (os != null)
+                if (os != null) {
                     os.close();
+                }
             }
         }
     }

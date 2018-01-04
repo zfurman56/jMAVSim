@@ -27,10 +27,11 @@ public class Quadcopter extends AbstractMulticopter {
      * @param rotorTimeConst spin-up time of rotor [s]
      * @param rotorsOffset   rotors positions offset from gravity center
      */
-    public Quadcopter(World world, String modelName, String orientation, String style, double armLength, double rotorThrust,
+    public Quadcopter(World world, String modelName, String orientation, String style, double armLength,
+                      double rotorThrust,
                       double rotorTorque, double rotorTimeConst, Vector3d rotorsOffset) {
         super(world, modelName);
-        
+
         int i;
 
         if (style == "cw_fr") {
@@ -38,18 +39,19 @@ public class Quadcopter extends AbstractMulticopter {
             rotorPositions[1] = new Vector3d(0.0, armLength, 0.0);
             rotorPositions[2] = new Vector3d(-armLength, 0.0, 0.0);
             rotorPositions[3] = new Vector3d(0.0, -armLength, 0.0);
-            for (i = 0; i < rotorsNum; ++i)
+            for (i = 0; i < rotorsNum; ++i) {
                 rotorRotations[i] = ((i % 2) == 0) ? 1 : -1;
-        }
-        else {
+            }
+        } else {
             rotorPositions[0] = new Vector3d(0.0, armLength, 0.0);
             rotorPositions[1] = new Vector3d(0.0, -armLength, 0.0);
             rotorPositions[2] = new Vector3d(armLength, 0.0, 0.0);
             rotorPositions[3] = new Vector3d(-armLength, 0.0, 0.0);
-            for (i = 0; i < rotorsNum; ++i)
+            for (i = 0; i < rotorsNum; ++i) {
                 rotorRotations[i] = (i < 2) ? -1 : 1;
+            }
         }
-        
+
         if (orientation.equals("x") || orientation.equals("X")) {
             Matrix3d r = new Matrix3d();
             r.rotZ(-Math.PI / 4);

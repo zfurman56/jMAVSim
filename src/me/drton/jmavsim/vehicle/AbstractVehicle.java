@@ -56,47 +56,54 @@ public abstract class AbstractVehicle extends DynamicObject implements Reporting
         builder.append(ReportUtil.vector2str(ReportUtil.vectRad2Deg(attitude)));
         builder.append(newLine);
         builder.append(newLine);
-        
+
         if (sensors != null) {
             builder.append("SENSORS");
             builder.append(newLine);
             builder.append("--------");
             builder.append(newLine);
-            
+
             tv = sensors.getAcc();
             builder.append("ACC: ");
             builder.append(ReportUtil.vector2str(tv));
             builder.append(newLine);
-            builder.append(String.format("    Magnitude: %s;", ReportUtil.d2str(Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z))));
+            builder.append(String.format("    Magnitude: %s;",
+                                         ReportUtil.d2str(Math.sqrt(tv.x * tv.x + tv.y * tv.y + tv.z * tv.z))));
             builder.append(newLine);
-            builder.append(String.format("    P: %s; R: %s", ReportUtil.d2str(Math.toDegrees(Math.atan2(tv.x, -tv.z))), ReportUtil.d2str(Math.toDegrees(Math.atan2(-tv.y, -tv.z)))));
-            builder.append(newLine+newLine);
+            builder.append(String.format("    P: %s; R: %s", ReportUtil.d2str(Math.toDegrees(Math.atan2(tv.x,
+                                                                              -tv.z))), ReportUtil.d2str(Math.toDegrees(Math.atan2(-tv.y, -tv.z)))));
+            builder.append(newLine + newLine);
 
             tv = sensors.getGyro();
             builder.append("GYO: ");
             builder.append(ReportUtil.vector2str(tv));
             builder.append(newLine);
-            builder.append(String.format("    Magnitude: %s;", ReportUtil.d2str(Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z))));
-            builder.append(newLine+newLine);
-            
+            builder.append(String.format("    Magnitude: %s;",
+                                         ReportUtil.d2str(Math.sqrt(tv.x * tv.x + tv.y * tv.y + tv.z * tv.z))));
+            builder.append(newLine + newLine);
+
             tv = sensors.getMag();
             builder.append("MAG: ");
             builder.append(ReportUtil.vector2str(tv));
             builder.append(newLine);
-            builder.append(String.format("    Magnitude: %s;", ReportUtil.d2str(Math.sqrt(tv.x*tv.x + tv.y*tv.y + tv.z*tv.z))));
-            builder.append(newLine+newLine);
+            builder.append(String.format("    Magnitude: %s;",
+                                         ReportUtil.d2str(Math.sqrt(tv.x * tv.x + tv.y * tv.y + tv.z * tv.z))));
+            builder.append(newLine + newLine);
 
             LatLonAlt pos;
-            if (sensors.getGNSS() != null && sensors.getGNSS().position != null) 
+            if (sensors.getGNSS() != null && sensors.getGNSS().position != null) {
                 pos = sensors.getGNSS().position;
-            else
+            } else {
                 pos = sensors.getGlobalPosition();
-            builder.append(String.format("GPS Lat: %+013.8f;\n    Lon: %+013.8f\n    Alt: %07.3f", pos.lat, pos.lon, pos.alt));
+            }
+            builder.append(String.format("GPS Lat: %+013.8f;\n    Lon: %+013.8f\n    Alt: %07.3f", pos.lat,
+                                         pos.lon, pos.alt));
             builder.append(newLine);
-            builder.append(String.format("Baro Alt: %07.3f; Pa: %08.2f", sensors.getPressureAlt(), sensors.getPressure()));
-            builder.append(newLine+newLine);
+            builder.append(String.format("Baro Alt: %07.3f; Pa: %08.2f", sensors.getPressureAlt(),
+                                         sensors.getPressure()));
+            builder.append(newLine + newLine);
         }
-        
+
     }
 
     public void setControl(List<Double> control) {
@@ -120,13 +127,14 @@ public abstract class AbstractVehicle extends DynamicObject implements Reporting
     public Sensors getSensors() {
         return sensors;
     }
-    
+
     @Override
     public void resetObjectParameters() {
         super.resetObjectParameters();
         position.set(0.0, 0.0, 0.0);
-        if (sensors != null)
+        if (sensors != null) {
             sensors.setReset(true);
+        }
     }
 
     @Override

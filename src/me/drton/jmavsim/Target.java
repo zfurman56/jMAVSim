@@ -22,7 +22,7 @@ public abstract class Target extends KinematicObject {
 
     public GNSSReport getGlobalPosition() {
         Vector3d pos = getPosition();
-        LatLonAlt latLonAlt = gpsProjector.reproject(new double[]{pos.x, pos.y, pos.z});
+        LatLonAlt latLonAlt = gpsProjector.reproject(new double[] {pos.x, pos.y, pos.z});
         GNSSReport gps = new GNSSReport();
         gps.position = latLonAlt;
         gps.eph = 1.0f;

@@ -25,15 +25,20 @@ public class Hexacopter extends AbstractMulticopter {
      * @param rotorTimeConst spin-up time of rotor
      * @param rotorsOffset   rotors positions offset from gravity center
      */
-    public Hexacopter(World world, String modelName, String orientation, double armLength, double rotorThrust,
+    public Hexacopter(World world, String modelName, String orientation, double armLength,
+                      double rotorThrust,
                       double rotorTorque, double rotorTimeConst, Vector3d rotorsOffset) {
         super(world, modelName);
         rotorPositions[0] = new Vector3d(armLength, 0.0, 0.0);
         rotorPositions[1] = new Vector3d(-armLength, 0.0, 0.0);
-        rotorPositions[2] = new Vector3d(-armLength * Math.cos(Math.PI / 3), -armLength * Math.sin(Math.PI / 3), 0.0);
-        rotorPositions[3] = new Vector3d(armLength * Math.cos(Math.PI / 3), armLength * Math.sin(Math.PI / 3), 0.0);
-        rotorPositions[4] = new Vector3d(armLength * Math.cos(Math.PI / 3), -armLength * Math.sin(Math.PI / 3), 0.0);
-        rotorPositions[5] = new Vector3d(-armLength * Math.cos(Math.PI / 3), armLength * Math.sin(Math.PI / 3), 0.0);
+        rotorPositions[2] = new Vector3d(-armLength * Math.cos(Math.PI / 3),
+                                         -armLength * Math.sin(Math.PI / 3), 0.0);
+        rotorPositions[3] = new Vector3d(armLength * Math.cos(Math.PI / 3),
+                                         armLength * Math.sin(Math.PI / 3), 0.0);
+        rotorPositions[4] = new Vector3d(armLength * Math.cos(Math.PI / 3),
+                                         -armLength * Math.sin(Math.PI / 3), 0.0);
+        rotorPositions[5] = new Vector3d(-armLength * Math.cos(Math.PI / 3),
+                                         armLength * Math.sin(Math.PI / 3), 0.0);
         if (orientation.equals("x") || orientation.equals("X")) {
             Matrix3d r = new Matrix3d();
             r.rotZ(Math.PI / 2);

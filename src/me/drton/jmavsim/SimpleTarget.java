@@ -16,7 +16,8 @@ public class SimpleTarget extends Target {
         super(world, size);
     }
 
-    public void setTrajectory(Vector3d positionStart, Vector3d positionFinish, long timeStart, long timeFinish) {
+    public void setTrajectory(Vector3d positionStart, Vector3d positionFinish, long timeStart,
+                              long timeFinish) {
         this.positionStart = positionStart;
         this.positionFinish = positionFinish;
         this.timeStart = timeStart;
@@ -25,7 +26,8 @@ public class SimpleTarget extends Target {
 
     @Override
     public void update(long t) {
-        double progress = Math.min(1.0, Math.max(0.0, (double) (t - timeStart) / (double) (timeFinish - timeStart)));
+        double progress = Math.min(1.0, Math.max(0.0,
+                                                 (double)(t - timeStart) / (double)(timeFinish - timeStart)));
         Vector3d vec = new Vector3d();
         vec.sub(positionFinish, positionStart);
         position.scaleAdd(progress, vec, positionStart);
