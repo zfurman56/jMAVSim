@@ -21,19 +21,19 @@ public interface Sensors {
     double getPressure();
 
     GNSSReport getGNSS();
-    
+
     LatLonAlt getGlobalPosition();
 
     boolean isGPSUpdated();
-    
+
     boolean isReset();
-    
+
     void setReset(boolean reset);
 
     void setGPSStartTime(long time);
-    
+
     long getGPSStartTime();
-    
+
     void update(long t);
 
     void setParameter(String name, float value);

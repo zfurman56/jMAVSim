@@ -37,7 +37,7 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
     public CameraGimbal2D(World world, String modelName) {
         super(world);
         if (!modelName.isEmpty()) {
-            
+
             Texture texture = new TextureLoader(modelName, null).getTexture();
             texture.setBoundaryModeS(Texture.WRAP);
             texture.setBoundaryModeT(Texture.WRAP);
@@ -46,15 +46,15 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
             Color3f black = new Color3f(0.0f, 0.0f, 0.0f);
             Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
             app.setMaterial(new Material(white, black, white, black, 10.0f));
-            
+
             TextureAttributes texAttr = new TextureAttributes();
             texAttr.setTextureMode(TextureAttributes.REPLACE);
             app.setTexture(texture);
             app.setTextureAttributes(texAttr);
-            
+
             // the actual model
             model = new Sphere(gimbalDia, Sphere.GENERATE_NORMALS | Sphere.GENERATE_TEXTURE_COORDS, 32, app);
-            
+
             gimbalTG = new TransformGroup();
             gimbalTG.setCapability(TransformGroup.ALLOW_TRANSFORM_READ);
             gimbalTG.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
@@ -67,7 +67,7 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
             transformGroup.addChild(gimbalTG);
         }
     }
-    
+
     public void report(StringBuilder builder) {
         builder.append("GIMBAL");
         builder.append(newLine);
@@ -83,7 +83,7 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
         builder.append(String.format("Pitch ctrl: %s", ReportUtil.d2str(controls[0])));
         builder.append(newLine);
     }
-    
+
     public void setBaseObject(DynamicObject object) {
         this.baseObject = object;
     }
@@ -117,19 +117,22 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
         this.position = (Vector3d) baseObject.position.clone();
         this.attitude = (Vector3d) baseObject.attitude.clone();
         this.rotation.rotZ(this.attitude.z);
-        if ((pitchChannel >= 0 || rollChannel >= 0) && baseObject instanceof AbstractVehicle && ((AbstractVehicle) baseObject).getControl().size() > 0) {
+        if ((pitchChannel >= 0 || rollChannel >= 0) && baseObject instanceof AbstractVehicle &&
+                ((AbstractVehicle) baseObject).getControl().size() > 0) {
             // Control camera pitch/roll
             List<Double> control = ((AbstractVehicle) baseObject).getControl();
 
             if (rollChannel >= 0) {
-                if (control.size() > rollChannel)
+                if (control.size() > rollChannel) {
                     this.controls[0] = control.get(rollChannel);
+                }
                 this.attitude.x = (this.controls[0] * rollScale);
             }
             if (pitchChannel >= 0) {
-                if (control.size() > pitchChannel)
+                if (control.size() > pitchChannel) {
                     this.controls[1] = control.get(pitchChannel);
-            this.attitude.y = (this.controls[1] * pitchScale);
+                }
+                this.attitude.y = (this.controls[1] * pitchScale);
             }
         }
 
@@ -142,6 +145,6 @@ public class CameraGimbal2D extends KinematicObject implements ReportingObject {
         Vector3d newOffset = (Vector3d) positionOffset.clone();
         rotation.transform(newOffset);
         this.position.add(newOffset);
-        
+
     }
 }

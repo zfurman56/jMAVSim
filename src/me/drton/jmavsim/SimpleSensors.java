@@ -53,7 +53,7 @@ public class SimpleSensors implements Sensors {
         ephFilter.filterInit(1.0 / gpsInterval, 0.9, ephHigh);
         epvFilter.filterInit(1.0 / gpsInterval, 0.9, epvHigh);
     }
-    
+
     @Override
     public void setObject(DynamicObject object) {
         this.object = object;
@@ -160,23 +160,24 @@ public class SimpleSensors implements Sensors {
     public LatLonAlt getGlobalPosition() {
         return globalPosition;
     }
-    
+
     public void setGlobalPosition(Vector3d pos) {
-        if (pos == null)
+        if (pos == null) {
             pos = object.getPosition();
+        }
 
         long t = System.currentTimeMillis();
         double dt = 0.0;
-        if ( prevUpdateTime > 0 ) {
+        if (prevUpdateTime > 0) {
             dt = (t - this.prevUpdateTime) * 1e-3;
         }
 
         // add noise (random walk)
-        if ( dt > 0.0 ) {
+        if (dt > 0.0) {
             double sqrtDt = java.lang.Math.sqrt(dt);
-            double noiseX = sqrtDt*randomNoise(gpsNoiseStdDev);
-            double noiseY = sqrtDt*randomNoise(gpsNoiseStdDev);
-            double noiseZ = sqrtDt*randomNoise(gpsNoiseStdDev);
+            double noiseX = sqrtDt * randomNoise(gpsNoiseStdDev);
+            double noiseY = sqrtDt * randomNoise(gpsNoiseStdDev);
+            double noiseZ = sqrtDt * randomNoise(gpsNoiseStdDev);
 
             this.randomWalkGpsX += noiseX * dt - this.randomWalkGpsX / gpsCorrelationTime;
             this.randomWalkGpsY += noiseY * dt - this.randomWalkGpsY / gpsCorrelationTime;
@@ -187,11 +188,11 @@ public class SimpleSensors implements Sensors {
         double noiseGpsY = pos.y + this.randomWalkGpsY;
         double noiseGpsZ = pos.z + this.randomWalkGpsZ;
 
-        globalPosition = globalProjector.reproject(new double[]{noiseGpsX, noiseGpsY, noiseGpsZ});
+        globalPosition = globalProjector.reproject(new double[] {noiseGpsX, noiseGpsY, noiseGpsZ});
 
         this.prevUpdateTime = t;
     }
-    
+
     @Override
     public boolean isGPSUpdated() {
         boolean res = gpsUpdated;

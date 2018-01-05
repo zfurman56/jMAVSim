@@ -7,13 +7,13 @@ public final class Filter {
     /**
      * First-order fixed-timestep filter.
      * larger tau, smoother filter
-     * 
+     *
      */
     public void filterInit(double dt, double tau, double setpoint) {
         this.tc = dt / tau;
         filterReset(setpoint);
     }
-    
+
     public void filterReset(double setpoint) {
         this.z1 = setpoint;
     }

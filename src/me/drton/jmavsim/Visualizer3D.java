@@ -36,7 +36,7 @@ public class Visualizer3D extends JFrame {
     public static enum ViewTypes { VIEW_STATIC, VIEW_FPV, VIEW_GIMBAL }
     public static enum ZoomModes { ZOOM_NONE, ZOOM_DYNAMIC, ZOOM_FIXED }
     public static final double PI_2 = Math.PI / 2d;
-    
+
     public static final String    TEX_DIR = "environment/";  // folder for all environment textures
 
     public static final String    SKY_TEXTURE = "HDR_040_Field_Bg.jpg";
@@ -47,26 +47,29 @@ public class Visualizer3D extends JFrame {
     public static final String    GND_TEXTURE = "grass3.jpg";
     //public static final String    GND_TEXTURE = "ground.jpg";
     public static final String    COMPASS_IMG = "compass_rose.png";  // for overlay HUD
-    public static final Dimension WINDOW_SIZE = new Dimension(1024, 768);  // default application window size
+    public static final Dimension WINDOW_SIZE = new Dimension(1024,
+                                                              768);  // default application window size
     public static final float     WORLD_SIZE = 5000.0f;  // [m] size of world sphere
     public static final boolean   AA_ENABLED = true;  // default antialising for 3D scene
     public static final ViewTypes VIEW_TYPE  = ViewTypes.VIEW_STATIC;  // default view type
     public static final ZoomModes ZOOM_MODE  = ZoomModes.ZOOM_DYNAMIC;  // default zoom type
     public static final int       FPS_TARGET = 60;  // target frames per second
-    
+
     private Dimension reportPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 350), 200);
     private Dimension sensorParamPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 250), 200);
     private boolean reportPaused = false;
-    
+
     private int overlaySize = 260;  // width & height of compass overlay window
     private boolean showOverlay = true;
-    
+
     private double defaultFOV = Math.PI / 3;  // field of view
-    private float defaultDZDistance = 25.0f;  // [m] distance to object at which dynamic zoom is activated
+    private float defaultDZDistance =
+        25.0f;  // [m] distance to object at which dynamic zoom is activated
     private float manZoomStep = 0.1f;  // manual zoom steps as fraction of current zoom level
-    private Vector3d viewerGroundOffset = new Vector3d(-5.0, 0.0, -1.7);  // origin of ground-based fixed view
- 
-    
+    private Vector3d viewerGroundOffset = new Vector3d(-5.0, 0.0,
+                                                       -1.7);  // origin of ground-based fixed view
+
+
     private final World world;
     private double currentFOV = defaultFOV;
     private float dynZoomDistance = defaultDZDistance;
@@ -108,11 +111,13 @@ public class Visualizer3D extends JFrame {
 
         Dimension size = WINDOW_SIZE;
         Rectangle sizeBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-        if (size.width > sizeBounds.width)
+        if (size.width > sizeBounds.width) {
             size.width = sizeBounds.width;
-        if (size.height > sizeBounds.height)
+        }
+        if (size.height > sizeBounds.height) {
             size.height = sizeBounds.height;
-        
+        }
+
         setSize(size);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("jMAVSim");
@@ -147,10 +152,11 @@ public class Visualizer3D extends JFrame {
 
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
-        if (showOverlay)
+        if (showOverlay) {
             canvas = new CustomCanvas3D(gc, size, overlaySize);
-        else
+        } else {
             canvas = new Canvas3D(gc);
+        }
         canvas.setFocusable(false);
         canvas.addKeyListener(keyHandler);
         canvas.setMinimumSize(new Dimension(250, 250));
@@ -189,7 +195,7 @@ public class Visualizer3D extends JFrame {
             }
         }
     }
-    
+
     private void createEnvironment() {
         BranchGroup group = new BranchGroup();
         sceneBounds = new BoundingSphere(new Point3d(0.0, 0.0, 0.0), WORLD_SIZE);
@@ -201,9 +207,10 @@ public class Visualizer3D extends JFrame {
         TransformGroup tg;
         Matrix3d rot = new Matrix3d();
         rot.rotX(PI_2);
-        
+
         // Sky
-        Sphere skySphere = new Sphere(1.0f, Sphere.GENERATE_NORMALS_INWARD | Sphere.GENERATE_TEXTURE_COORDS, 36);
+        Sphere skySphere = new Sphere(1.0f, Sphere.GENERATE_NORMALS_INWARD | Sphere.GENERATE_TEXTURE_COORDS,
+                                      36);
         Map propMap = canvas.queryProperties();
         String driverVendor = (String) propMap.get("native.vendor");
         // The VMware graphics driver has a bug, where the large sky texture just shows up white,
@@ -216,7 +223,7 @@ public class Visualizer3D extends JFrame {
         skySphere.getAppearance().setTexture(tex);
         trans = new Transform3D();
         Matrix3d rotSky = new Matrix3d();
-        rotSky.rotZ(-120d*Math.PI/180d);
+        rotSky.rotZ(-120d * Math.PI / 180d);
         rotSky.mul(rot);
         trans.setRotation(rotSky);
         tg = new TransformGroup(trans);
@@ -234,10 +241,10 @@ public class Visualizer3D extends JFrame {
         // Ground
         group.addChild(createFlatFloor(ground_offset));
 //      group.addChild(createMultiFloor(ground_offset));
-        
+
 //        // cylinder-as-floor attempt, but isn't blending right with transparent overlay
 //        trans = new Transform3D();
-//        trans.setRotation(rot);  
+//        trans.setRotation(rot);
 //        trans.transform(new Vector3d(0.0, 0.0, ground_offset));
 //        tg = new TransformGroup(trans);
 //        tg.addChild(createFlatFloor(ground_offset));
@@ -250,7 +257,8 @@ public class Visualizer3D extends JFrame {
 //      group.addChild(rose.getBranchGroup());
 
         // Light
-        DirectionalLight light1 = new DirectionalLight(new Color3f(1.0f, 1.0f, 1.0f), new Vector3f(4.0f, 7.0f, 12.0f));
+        DirectionalLight light1 = new DirectionalLight(new Color3f(1.0f, 1.0f, 1.0f), new Vector3f(4.0f,
+                                                       7.0f, 12.0f));
         light1.setInfluencingBounds(sceneBounds);
         group.addChild(light1);
         AmbientLight light2 = new AmbientLight(new Color3f(0.9f, 0.9f, 0.9f));
@@ -273,10 +281,11 @@ public class Visualizer3D extends JFrame {
         float tiles = 1.0f;
 
         tex = loadTexture(TEX_DIR + GND_TEXTURE);
-        if (tex != null)
+        if (tex != null) {
             tiles = (int)(WORLD_SIZE / tex.getWidth()) * 800;
+        }
 
-        QuadArray plane = new QuadArray(4,  GeometryArray.COORDINATES | GeometryArray.TEXTURE_COORDINATE_2 );
+        QuadArray plane = new QuadArray(4,  GeometryArray.COORDINATES | GeometryArray.TEXTURE_COORDINATE_2);
         plane.setCoordinate(0, new Point3d(-side, side, dZ));
         plane.setCoordinate(1, new Point3d(side, side, dZ));
         plane.setCoordinate(2, new Point3d(side, -side, dZ));
@@ -284,7 +293,7 @@ public class Visualizer3D extends JFrame {
         plane.setTextureCoordinate(0, 0, new TexCoord2f(0.0f, 0.0f));
         plane.setTextureCoordinate(0, 1, new TexCoord2f(tiles, 0.0f));
         plane.setTextureCoordinate(0, 2, new TexCoord2f(tiles, tiles));
-        plane.setTextureCoordinate(0, 3, new TexCoord2f(0.0f, tiles));  
+        plane.setTextureCoordinate(0, 3, new TexCoord2f(0.0f, tiles));
 
         // for cylinder
 //      tex.setBoundaryModeT(Texture.WRAP);
@@ -296,7 +305,7 @@ public class Visualizer3D extends JFrame {
 //      texat.setTextureMode(TextureAttributes.REPLACE);
 //      texat.setPerspectiveCorrectionMode(TextureAttributes.NICEST);
 //      ap.setTextureAttributes(texat);
-        
+
         ap.setTexture(tex);
 
         //return new Cylinder(worldExtent, 0.001f, Cylinder.GENERATE_TEXTURE_COORDS | Cylinder.GENERATE_NORMALS, 8, 4, ap);
@@ -307,7 +316,7 @@ public class Visualizer3D extends JFrame {
     private float[][] heights;  // height map for the floor
     // the floor is a multi-textured mesh, with splashes of extra textures
     private OrderedGroup createMultiFloor() {
-        MultiFloor floor = new MultiFloor(TEX_DIR + "grass.gif", 4, TEX_DIR + "stoneBits.gif", 2);  
+        MultiFloor floor = new MultiFloor(TEX_DIR + "grass.gif", 4, TEX_DIR + "stoneBits.gif", 2);
         // the ground detail textures are grass and bits of stone
         //   the frequencies (4, 2) should divide into the floor length
         //   (FLOOR_LEN (20) in MultiFloor) with no remainder
@@ -331,8 +340,8 @@ public class Visualizer3D extends JFrame {
             floorOG.addChild( new SplashShape(waterTex, heights) );
 
         // return all the meshes
-        return floorOG; 
-    } 
+        return floorOG;
+    }
     */
 
     // load image from file as a texture
@@ -342,18 +351,18 @@ public class Visualizer3D extends JFrame {
         Texture2D texture = new Texture2D();
         texture.setEnable(false);
         try {
-             texLoader = new TextureLoader(fn, null);
-             // enable Mipmapping (increases memory usage considerably)
-             //texLoader = new TextureLoader(fn, TextureLoader.GENERATE_MIPMAP, null);
+            texLoader = new TextureLoader(fn, null);
+            // enable Mipmapping (increases memory usage considerably)
+            //texLoader = new TextureLoader(fn, TextureLoader.GENERATE_MIPMAP, null);
         }  catch (ImageException e) {
             System.out.println("Error, could not load texture: " + fn);
             System.out.println("Error message:" + e.getLocalizedMessage());
         }
         if (texLoader != null) {
             texture = (Texture2D) texLoader.getTexture();
-            if (texture == null)
+            if (texture == null) {
                 System.out.println("Cannot load texture from " + fn);
-            else {
+            } else {
                 //System.out.println( "\t\tNumber Of MIPMAPS->" + texture.numMipMapLevels() );
                 texture.setMinFilter(Texture.NICEST);
                 texture.setMagFilter(Texture.NICEST);
@@ -364,7 +373,7 @@ public class Visualizer3D extends JFrame {
             }
         }
         return texture;
-    } 
+    }
 
 
     /**
@@ -383,8 +392,9 @@ public class Visualizer3D extends JFrame {
      */
     public void setViewerPositionObject(KinematicObject object) {
         this.viewerPositionObject = object;
-        if (object != null && zoomMode == ZoomModes.ZOOM_DYNAMIC)
+        if (object != null && zoomMode == ZoomModes.ZOOM_DYNAMIC) {
             nextZoomMode();
+        }
     }
 
     /**
@@ -440,8 +450,9 @@ public class Visualizer3D extends JFrame {
      * @param text
      */
     public void setReportText(String text) {
-        if (showReportText())
+        if (showReportText()) {
             reportPanel.setText(text);
+        }
     }
 
     /**
@@ -457,9 +468,10 @@ public class Visualizer3D extends JFrame {
      * @param text
      */
     public void toggleReportPanel(boolean on) {
-        if (reportPanel == null || (on && reportPanel.isShowing()) || (!on && !reportPanel.isShowing()))
+        if (reportPanel == null || (on && reportPanel.isShowing()) || (!on && !reportPanel.isShowing())) {
             return;
-        
+        }
+
         setReportPaused(!on);
         if (reportPanel.isShowing()) {
             reportPanelSize = reportPanel.getSize();
@@ -470,7 +482,7 @@ public class Visualizer3D extends JFrame {
             splitPane.setLeftComponent(reportPanel);
             splitPane.setDividerSize((int)UIManager.get("SplitPane.dividerSize"));
         }
-        
+
         splitPane.resetToPreferredSizes();
         revalidate();
     }
@@ -507,10 +519,11 @@ public class Visualizer3D extends JFrame {
     public void setReportPaused(boolean pause) {
         reportPaused = pause;
         reportPanel.setIsFocusable(pause);
-        if (pause)
+        if (pause) {
             ReportUpdater.setUpdateFreq(0L);
-        else
+        } else {
             ReportUpdater.resetUpdateFreq();
+        }
     }
 
     public void setShowOverlay(boolean showOverlay) {
@@ -523,31 +536,34 @@ public class Visualizer3D extends JFrame {
      */
     public void setAAEnabled(boolean enable) {
         view.setSceneAntialiasingEnable(enable);
-        if (showOverlay)
+        if (showOverlay) {
             ((CustomCanvas3D)canvas).setAA(enable);
+        }
     }
 
-    
+
     public OutputStream getOutputStream() {
         return outputStream;
     }
 
     public void setZoomMode(ZoomModes zoomMode) {
-        if (zoomMode == ZoomModes.ZOOM_DYNAMIC && viewType != ViewTypes.VIEW_STATIC)
+        if (zoomMode == ZoomModes.ZOOM_DYNAMIC && viewType != ViewTypes.VIEW_STATIC) {
             nextZoomMode();
-        else
+        } else {
             this.zoomMode = zoomMode;
+        }
     }
 
     public void setDynZoomDistance(float dynZoomDistance) {
-        if (dynZoomDistance < 0.5f)
+        if (dynZoomDistance < 0.5f) {
             dynZoomDistance = 0.5f;
-        else {
+        } else {
             double dist = getVectorToTargetObject(viewerPosition, viewerTargetObject).length();
-            if (dynZoomDistance > dist + defaultDZDistance)
+            if (dynZoomDistance > dist + defaultDZDistance) {
                 dynZoomDistance = (float)dist + defaultDZDistance;
+            }
         }
-        
+
         this.dynZoomDistance = dynZoomDistance;
     }
 
@@ -556,7 +572,7 @@ public class Visualizer3D extends JFrame {
         view.setFieldOfView(fov);
         currentFOV = fov;
     }
-    
+
     public void setViewType(ViewTypes v) {
         switch (v) {
             case VIEW_STATIC :
@@ -584,9 +600,9 @@ public class Visualizer3D extends JFrame {
                     this.viewType = ViewTypes.VIEW_GIMBAL;
                     this.setViewerPositionObject(gimbalViewObject);
                     this.setViewerPositionOffset(new Vector3d(0.0f, 0.0f, 0.0f));
-                }
-                else
+                } else {
                     System.out.println("Unable to set view, gimbal not mounted.");
+                }
                 break;
         }
     }
@@ -594,15 +610,13 @@ public class Visualizer3D extends JFrame {
     private void nextZoomMode() {
         if (zoomMode == ZoomModes.ZOOM_NONE && viewType == ViewTypes.VIEW_STATIC) {
             zoomMode = ZoomModes.ZOOM_DYNAMIC;
-        }
-        else if (zoomMode == ZoomModes.ZOOM_FIXED) {
+        } else if (zoomMode == ZoomModes.ZOOM_FIXED) {
             zoomMode = ZoomModes.ZOOM_NONE;
             view.setFieldOfView(defaultFOV);
-        }
-        else  {
+        } else  {
             zoomMode = ZoomModes.ZOOM_FIXED;
             view.setFieldOfView(currentFOV);
-        } 
+        }
     }
 
     public void resetView() {
@@ -613,13 +627,13 @@ public class Visualizer3D extends JFrame {
         tmp_m3d1.mul(tmp_m3d2);
         viewerTransform.setRotation(tmp_m3d1);
     }
- 
+
     public Vector3d getVectorToTargetObject(Vector3d from, KinematicObject objTo) {
         Vector3d ret = new Vector3d();
         ret.sub(objTo.getPosition(), from);
         return ret;
     }
-    
+
     private void updateVisualizer() {
         double dist;
         synchronized (world) { // Synchronize with "world" thread
@@ -640,19 +654,18 @@ public class Visualizer3D extends JFrame {
                     viewerPositionObject.getRotation().transform(viewerPosition);
                     viewerPosition.add(viewerPositionObject.getPosition());
                     viewerTransform.setTranslation(viewerPosition);
-    
+
                     tmp_m3d1.set(viewerPositionObject.getRotation());
                     tmp_m3d2.rotZ(PI_2);
                     tmp_m3d1.mul(tmp_m3d2);
                     tmp_m3d2.rotX(-PI_2);
                     tmp_m3d1.mul(tmp_m3d2);
                     viewerTransform.setRotation(tmp_m3d1);
-                } 
-                else if (viewerTargetObject != null) {
+                } else if (viewerTargetObject != null) {
                     // Fixed-position camera, point camera to target
                     tmp_v3d = viewerTargetObject.getPosition();
                     dist = getVectorToTargetObject(viewerPosition, viewerTargetObject).length();
-    
+
                     tmp_m3d1.rotZ(Math.PI);
                     tmp_m3d2.rotY(PI_2);
                     tmp_m3d1.mul(tmp_m3d2);
@@ -663,17 +676,17 @@ public class Visualizer3D extends JFrame {
                     tmp_m3d2.rotX(-Math.asin((tmp_v3d.z - viewerPosition.z) / dist));
                     tmp_m3d1.mul(tmp_m3d2);
                     viewerTransform.setRotation(tmp_m3d1);
-                    
+
                     if (zoomMode == ZoomModes.ZOOM_DYNAMIC) {
-                        if (dist > dynZoomDistance) 
+                        if (dist > dynZoomDistance) {
                             view.setFieldOfView(dynZoomDistance / dist * currentFOV);
-                        else
+                        } else {
                             view.setFieldOfView(currentFOV);
+                        }
                     }
                 }
                 viewerTransformGroup.setTransform(viewerTransform);
-            } 
-            catch (BadTransformException e) {
+            } catch (BadTransformException e) {
                 e.printStackTrace();
             }
         }
@@ -683,22 +696,25 @@ public class Visualizer3D extends JFrame {
      * Reset Rotation, Acceleration, Velocity
      */
     private void resetObjectRAV(KinematicObject obj, boolean resetPos) {
-        if (obj == null)
+        if (obj == null) {
             return;
+        }
         Vector3f oldpos = new Vector3f(obj.getPosition());
         obj.resetObjectParameters();
-        if (!resetPos)
+        if (!resetPos) {
             moveObject(obj, oldpos, true);
-        else
+        } else {
             obj.setIgnoreGravity(false);
+        }
     }
 
     /*
      * Rotate object in steps
      */
     private void rotateObject(KinematicObject obj, Vector3f vec, float deg) {
-        if (obj == null)
+        if (obj == null) {
             return;
+        }
         Matrix3d rot = obj.getRotation();
         Matrix3d r = new Matrix3d();
         if (vec == null) {
@@ -714,14 +730,16 @@ public class Visualizer3D extends JFrame {
      * Set a continuous rotation rate of an object
      */
     private void spinRateObject(KinematicObject obj, Vector3f vec) {
-        if (obj == null)
+        if (obj == null) {
             return;
-        if (vec == null)
+        }
+        if (vec == null) {
             obj.setRotationRate(new Vector3d());
-        else {
+        } else {
             // if still on ground, move it up so it can rotate
-            if (obj.getPosition().z >= 0)
+            if (obj.getPosition().z >= 0) {
                 moveObject(obj, new Vector3f(0f, 0f, -2.0f), false);
+            }
             obj.getRotationRate().add(new Vector3d(vec));
         }
     }
@@ -730,13 +748,15 @@ public class Visualizer3D extends JFrame {
      * Change position of an object
      */
     private void moveObject(KinematicObject obj, Vector3f vec, boolean absolute) {
-        if (obj == null)
+        if (obj == null) {
             return;
+        }
         Vector3d pos = obj.getPosition();
-        if (absolute)
+        if (absolute) {
             pos.set(vec);
-        else
+        } else {
             pos.add(new Vector3d(vec));
+        }
         obj.setIgnoreGravity(pos.z < 0.0);
 //        if (pos.z >= 0.0)
 //            //world.getEnvironment().setG(null);
@@ -747,10 +767,12 @@ public class Visualizer3D extends JFrame {
     /*
      * Manipulate wind in environment
      */
-    private void windDirection(Vector3f vec, boolean setBase, boolean setCurrent, boolean setDeviation) {
+    private void windDirection(Vector3f vec, boolean setBase, boolean setCurrent,
+                               boolean setDeviation) {
         if (vec == null) {
-            if (setBase)
+            if (setBase) {
                 world.getEnvironment().setWind(new Vector3d());
+            }
             if (setCurrent) {
                 world.getEnvironment().setCurrentWind(new Vector3d());
                 System.out.println("Wind reset to zero.");
@@ -759,33 +781,35 @@ public class Visualizer3D extends JFrame {
                 world.getEnvironment().setWindDeviation(new Vector3d());
                 System.out.println("Wind deviation reset to zero.");
             }
-        } 
-        else {
+        } else {
             Vector3d adj = new Vector3d(vec);
-            if (setBase)
+            if (setBase) {
                 world.getEnvironment().getWind().add(adj);
+            }
             if (setCurrent) {
                 world.getEnvironment().getCurrentWind(null).add(adj);
-                System.out.println("Wind vector is now " + ReportUtil.vector2str(world.getEnvironment().getCurrentWind(viewerPosition)));
+                System.out.println("Wind vector is now " + ReportUtil.vector2str(
+                                       world.getEnvironment().getCurrentWind(viewerPosition)));
             }
             if (setDeviation) {
                 world.getEnvironment().world.getEnvironment().getWindDeviation().add(adj);
-                System.out.println("Wind deviation is now " + ReportUtil.vector2str(world.getEnvironment().getWindDeviation()));
+                System.out.println("Wind deviation is now " + ReportUtil.vector2str(
+                                       world.getEnvironment().getWindDeviation()));
             }
         }
     }
-    
+
 
     //
     //// private Classes
     //
-    
+
     /*
      * Custom Canvas class for drawing optional overlay HUD
      */
     private class CustomCanvas3D extends Canvas3D {
         private static final long serialVersionUID = 7144426579917281131L;
-        
+
         private int[] overlayMargins = {10, 10};  // x, y from left/right bottom corner
         private Font font = new Font("SansSerif", Font.BOLD, 14);
         private Color txtColor = Color.white;
@@ -796,7 +820,7 @@ public class Visualizer3D extends JFrame {
         private Font msgFont = new Font("SansSerif", Font.PLAIN, 14);
         private Color msgColor = new Color(255, 255, 255, 240);
         private Color msgBgColor = new Color(202, 162, 0, 60);
-        
+
         private BufferedImage compassOverlay;
         private J3DGraphics2D g2d;
         private Matrix3d m1 = new Matrix3d();
@@ -818,28 +842,31 @@ public class Visualizer3D extends JFrame {
         private int framesCount = 0;
         private long frameTime = 0L;
 
-        public CustomCanvas3D(GraphicsConfiguration gc, Dimension windowSize, int overlayWidth) 
-        {
+        public CustomCanvas3D(GraphicsConfiguration gc, Dimension windowSize, int overlayWidth) {
             super(gc);
             g2d = this.getGraphics2D();
-            
+
             setAA(AA_ENABLED);
 
             // constrain overlay sizes
-            if (overlayWidth > windowSize.getWidth() / 2)
-                overlayWidth = (int) (windowSize.getWidth() / 2);
-            if (overlayWidth + 45 > windowSize.getHeight() / 2)
-                overlayWidth = (int) (windowSize.getHeight() / 2);
-            if (messagesSize[0] > windowSize.getWidth() / 2)
-                messagesSize[0] = (int) (windowSize.getWidth() / 2);
-            if (messagesSize[1] > windowSize.getHeight() * 0.75)
-                messagesSize[1] = (int) (windowSize.getHeight() * 0.75);
+            if (overlayWidth > windowSize.getWidth() / 2) {
+                overlayWidth = (int)(windowSize.getWidth() / 2);
+            }
+            if (overlayWidth + 45 > windowSize.getHeight() / 2) {
+                overlayWidth = (int)(windowSize.getHeight() / 2);
+            }
+            if (messagesSize[0] > windowSize.getWidth() / 2) {
+                messagesSize[0] = (int)(windowSize.getWidth() / 2);
+            }
+            if (messagesSize[1] > windowSize.getHeight() * 0.75) {
+                messagesSize[1] = (int)(windowSize.getHeight() * 0.75);
+            }
 
             overlaySize[0] = overlayWidth;
             overlaySize[1] = overlayWidth + 45;
             halfW = overlayWidth / 2;
             frameTime = System.nanoTime();
-            
+
             // drawing surface for vector lines
             drawImg = new BufferedImage(overlayWidth, overlayWidth, BufferedImage.TYPE_4BYTE_ABGR);
             drawg2d = drawImg.createGraphics();
@@ -847,7 +874,7 @@ public class Visualizer3D extends JFrame {
             // load and scale compass image for overlay
             URL file = null;
             compassOverlay = new BufferedImage(overlayWidth, overlayWidth, BufferedImage.TYPE_4BYTE_ABGR);
-            
+
             try {
                 file = new URL("file:./" + TEX_DIR + COMPASS_IMG);
                 if (file != null) {
@@ -859,34 +886,35 @@ public class Visualizer3D extends JFrame {
                 System.out.println("Error, could not load image: " + TEX_DIR + COMPASS_IMG);
                 System.out.println("Error message:" + e.getLocalizedMessage());
             }
-            
+
             // set up vector lines for HUD
             hdgLine = new Line2D.Float(0, 0, 0, halfW * -0.85f);
             crsLine = new Line2D.Float(0, 0, 0, halfW * -0.425f);
             windLine = new Line2D.Float(0, 0, 0, halfW * -0.425f);
-       
+
         }
-        
-        public void setAA(boolean on) 
-        {
+
+        public void setAA(boolean on) {
             if (on) {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
+                                     RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
                 g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             } else {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
+                g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
+                                     RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED);
                 g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             }
         }
-        
+
         // we draw the HUD/overlay here
-        public void postRender()
-        {
-            if (!showOverlay)
+        public void postRender() {
+            if (!showOverlay) {
                 return;
+            }
 
             int x = overlayMargins[0];
             int y = this.getHeight() - overlaySize[1] - overlayMargins[1];
@@ -894,7 +922,7 @@ public class Visualizer3D extends JFrame {
             Vector3d vect;
 
             clearDrawing();
-            
+
             // compass rotation in relation to viewer
             viewerTransform.get(m1);
             dZ = -Math.atan2(m1.getElement(1, 0), m1.getElement(0, 0)) + Math.toRadians(90.0);
@@ -909,7 +937,8 @@ public class Visualizer3D extends JFrame {
             affTrans.rotate(vect.x, vect.y);
             affTrans.rotate(dZ);
             // scale length and width based on wind speed
-            affTrans.scale(Math.max(Math.min(Math.abs(vect.z) * 0.5, 10.0), 1.0), Math.min(norm * 0.2, halfW * 0.85));
+            affTrans.scale(Math.max(Math.min(Math.abs(vect.z) * 0.5, 10.0), 1.0), Math.min(norm * 0.2,
+                                                                                           halfW * 0.85));
             drawg2d.setTransform(affTrans);
             drawg2d.setColor(windColor);
             drawg2d.setStroke(wndStroke);
@@ -933,24 +962,27 @@ public class Visualizer3D extends JFrame {
                 affTrans.setToTranslation(halfW, halfW);
                 affTrans.rotate(z + dZ);
                 // scale length and width based on vehicle speed
-                affTrans.scale(Math.max(Math.min(Math.abs(vect.z) * 0.5, 10.0), 1.0), Math.min(norm * 0.2, halfW * 0.85));
+                affTrans.scale(Math.max(Math.min(Math.abs(vect.z) * 0.5, 10.0), 1.0), Math.min(norm * 0.2,
+                                                                                               halfW * 0.85));
                 drawg2d.setTransform(affTrans);
                 drawg2d.setColor(crsColor);
                 drawg2d.setStroke(crsStroke);
                 drawg2d.draw(crsLine);
             }
-            
-            // now draw the composed compass + vectors image on the main J3DGraphics2D 
+
+            // now draw the composed compass + vectors image on the main J3DGraphics2D
             g2d.drawImage(drawImg, x, y, this);
-            
+
             // draw all HUD text items
-            
+
             g2d.setFont(font);
             g2d.setColor(txtColor);
             y += drawImg.getHeight() + 25;
-            String zmode = zoomMode == ZoomModes.ZOOM_NONE ? "Fixed" : zoomMode == ZoomModes.ZOOM_DYNAMIC ? "Dynamic" : "Manual";
-            if (zoomMode == ZoomModes.ZOOM_DYNAMIC)
+            String zmode = zoomMode == ZoomModes.ZOOM_NONE ? "Fixed" : zoomMode == ZoomModes.ZOOM_DYNAMIC ?
+                           "Dynamic" : "Manual";
+            if (zoomMode == ZoomModes.ZOOM_DYNAMIC) {
                 zmode += String.format(" @ %.2fm", dynZoomDistance);
+            }
             zmode += String.format("    FOV: %.2f\u00b0", Math.toDegrees(view.getFieldOfView()));
             g2d.drawString("Zoom mode: " + zmode, x, y);
             y += 20;
@@ -971,11 +1003,11 @@ public class Visualizer3D extends JFrame {
                 int h = Math.min(messagesSize[1], msgOutputStream.getListLen() * msgLineHeight + 5);
                 y = this.getHeight() - h - overlayMargins[1];
                 msgBg.setRoundRect(x, y, messagesSize[0], h, 15, 15);
-    
+
                 g2d.setColor(msgBgColor);
                 g2d.draw(msgBg);
                 g2d.fill(msgBg);
-                
+
                 x += 10;
                 y += msgLineHeight;
                 g2d.setFont(msgFont);
@@ -983,11 +1015,12 @@ public class Visualizer3D extends JFrame {
                 for (String msg : msgOutputStream.getStrings()) {
                     g2d.drawString(msg, x, y);
                     y += msgLineHeight;
-                    if (y > this.getHeight())
+                    if (y > this.getHeight()) {
                         break;
+                    }
                 }
             }
-            
+
             g2d.flush(false);
 
             ++framesCount;
@@ -997,7 +1030,7 @@ public class Visualizer3D extends JFrame {
                 frameTime = System.nanoTime();
             }
         }
-        
+
         private void clearDrawing() {
             // clear drawing image
             affTrans.setToIdentity();
@@ -1006,11 +1039,11 @@ public class Visualizer3D extends JFrame {
             drawg2d.fillRect(0, 0, overlaySize[0], overlaySize[0]);
             drawg2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
             drawg2d.setColor(Color.BLACK);
-            
+
         }
     }
-    
-    
+
+
     /*
      * KeyboardHandler
      */
@@ -1020,20 +1053,20 @@ public class Visualizer3D extends JFrame {
         @Override
         public void keyReleased(KeyEvent e) {
             keyBits.clear(e.getKeyCode());
-            
+
             checkCumulativeKeys();
-            
+
             switch (e.getKeyCode()) {
-            
+
                 // View swtich keys
                 case KeyEvent.VK_F :
                     setViewType(ViewTypes.VIEW_FPV);
                     break;
-    
+
                 case KeyEvent.VK_S :
                     setViewType(ViewTypes.VIEW_STATIC);
                     break;
-    
+
                 case KeyEvent.VK_G :
                     setViewType(ViewTypes.VIEW_GIMBAL);
                     break;
@@ -1064,17 +1097,19 @@ public class Visualizer3D extends JFrame {
                     setFieldOfView(defaultFOV);
                     setDynZoomDistance(defaultDZDistance);
                     break;
-                    
+
                 // init sim mode
                 case KeyEvent.VK_I :
-                    if (hilSystem != null)
+                    if (hilSystem != null) {
                         hilSystem.initMavLink();
+                    }
                     break;
-                    
+
                 // quit sim mode
                 case KeyEvent.VK_Q :
-                    if (hilSystem != null)
+                    if (hilSystem != null) {
                         hilSystem.endSim();
+                    }
                     break;
 
                 // toggle HUD overlay
@@ -1086,7 +1121,7 @@ public class Visualizer3D extends JFrame {
                 case KeyEvent.VK_C :
                     msgOutputStream.clearMessages();
                     break;
-                
+
                 // show help text
                 case KeyEvent.VK_F1 :
                     msgOutputStream.clearMessages();
@@ -1094,68 +1129,71 @@ public class Visualizer3D extends JFrame {
                     Simulator.printKeyCommands();
                     msgOutputStream.resetNumOfMessages();
                     break;
-        
+
                 // exit app
                 case KeyEvent.VK_ESCAPE :
                     dispatchEvent(new WindowEvent(getWindows()[0], WindowEvent.WINDOW_CLOSING));
                     break;
-    
+
                 // full view and object reset
                 case KeyEvent.VK_SPACE :
                     resetObjectRAV(vehicleViewObject, true);
-                    
+
                     resetView();
                     break;
-    
+
                 // vehicle object resets
                 case KeyEvent.VK_NUMPAD5 :
                     // reset wind
-                    if (keyBits.get(KeyEvent.VK_ALT))
+                    if (keyBits.get(KeyEvent.VK_ALT)) {
                         windDirection(null, true, true, true);
+                    }
                     // reset vehicle rotation, etc
-                    else if (keyBits.get(KeyEvent.VK_CONTROL))
+                    else if (keyBits.get(KeyEvent.VK_CONTROL)) {
                         resetObjectRAV(vehicleViewObject, false);
+                    }
                     // reset only rotation rate
-                    else
+                    else {
                         spinRateObject(vehicleViewObject, null);
+                    }
 
                     break;
-                    
+
             }
         }
 
         @Override
         public void keyPressed(KeyEvent e) {
             keyBits.set(e.getKeyCode());
-            
+
             checkCumulativeKeys();
 
             switch (e.getKeyCode()) {
-            
+
                 // zoom in
                 case KeyEvent.VK_PLUS :
                 case KeyEvent.VK_ADD :
                 case KeyEvent.VK_EQUALS :
-                    if (zoomMode == ZoomModes.ZOOM_DYNAMIC)
+                    if (zoomMode == ZoomModes.ZOOM_DYNAMIC) {
                         setDynZoomDistance(dynZoomDistance * (1.0f - manZoomStep));
-                    else {
+                    } else {
                         zoomMode = ZoomModes.ZOOM_FIXED;
                         setFieldOfView(currentFOV * (1.0f - manZoomStep));
                     }
                     break;
-    
+
                 // zoom out
                 case KeyEvent.VK_MINUS :
                 case KeyEvent.VK_SUBTRACT :
-                    if (zoomMode == ZoomModes.ZOOM_DYNAMIC)
+                    if (zoomMode == ZoomModes.ZOOM_DYNAMIC) {
                         setDynZoomDistance(dynZoomDistance * (1.0f + manZoomStep));
-                    else {
+                    } else {
                         zoomMode = ZoomModes.ZOOM_FIXED;
                         setFieldOfView(currentFOV * (1.0f + manZoomStep));
                     }
                     break;
             }
-            
+
 
         }
 
@@ -1167,23 +1205,29 @@ public class Visualizer3D extends JFrame {
             // magnitude of move (rotation magnitude is always 1)
             float m = keyBits.get(KeyEvent.VK_SHIFT) ? deg / 5.0f : 1.0f;
 
-            if (keyBits.get(KeyEvent.VK_LEFT) || keyBits.get(KeyEvent.VK_KP_LEFT))
+            if (keyBits.get(KeyEvent.VK_LEFT) || keyBits.get(KeyEvent.VK_KP_LEFT)) {
                 dir.x = (-m);
+            }
 
-            if (keyBits.get(KeyEvent.VK_RIGHT) || keyBits.get(KeyEvent.VK_KP_RIGHT))
+            if (keyBits.get(KeyEvent.VK_RIGHT) || keyBits.get(KeyEvent.VK_KP_RIGHT)) {
                 dir.x = (m);
+            }
 
-            if (keyBits.get(KeyEvent.VK_UP) || keyBits.get(KeyEvent.VK_KP_UP))
+            if (keyBits.get(KeyEvent.VK_UP) || keyBits.get(KeyEvent.VK_KP_UP)) {
                 dir.y = (-m);
+            }
 
-            if (keyBits.get(KeyEvent.VK_DOWN) || keyBits.get(KeyEvent.VK_KP_DOWN))
+            if (keyBits.get(KeyEvent.VK_DOWN) || keyBits.get(KeyEvent.VK_KP_DOWN)) {
                 dir.y = (m);
+            }
 
-            if (keyBits.get(KeyEvent.VK_END) || keyBits.get(KeyEvent.VK_INSERT))
+            if (keyBits.get(KeyEvent.VK_END) || keyBits.get(KeyEvent.VK_INSERT)) {
                 dir.z = (-m);
+            }
 
-            if (keyBits.get(KeyEvent.VK_PAGE_DOWN) || keyBits.get(KeyEvent.VK_DELETE))
+            if (keyBits.get(KeyEvent.VK_PAGE_DOWN) || keyBits.get(KeyEvent.VK_DELETE)) {
                 dir.z = (m);
+            }
 
             if (dir.length() != 0.0) {
 
@@ -1197,30 +1241,39 @@ public class Visualizer3D extends JFrame {
                     moveObject(vehicleViewObject, dir, false);
                 } else
                     // rotate vehicle
+                {
                     rotateObject(vehicleViewObject, dir, deg);
+                }
             }
-            
+
 
             // check for keypad events (rotation rate or wind force)
-            
-            if (keyBits.get(KeyEvent.VK_NUMPAD5))
+
+            if (keyBits.get(KeyEvent.VK_NUMPAD5)) {
                 return;
-            
+            }
+
             dir = new Vector3f();
             m = keyHandler.keyBits.get(KeyEvent.VK_CONTROL) ? 1.0f : 0.5f;
 
-            if (keyBits.get(KeyEvent.VK_NUMPAD4))
+            if (keyBits.get(KeyEvent.VK_NUMPAD4)) {
                 dir.x = (-m);
-            if (keyBits.get(KeyEvent.VK_NUMPAD6))
+            }
+            if (keyBits.get(KeyEvent.VK_NUMPAD6)) {
                 dir.x = (m);
-            if (keyBits.get(KeyEvent.VK_NUMPAD8))
+            }
+            if (keyBits.get(KeyEvent.VK_NUMPAD8)) {
                 dir.y = (-m);
-            if (keyBits.get(KeyEvent.VK_NUMPAD2))
+            }
+            if (keyBits.get(KeyEvent.VK_NUMPAD2)) {
                 dir.y = (m);
-            if (keyBits.get(KeyEvent.VK_NUMPAD1))
+            }
+            if (keyBits.get(KeyEvent.VK_NUMPAD1)) {
                 dir.z = (-m);
-            if (keyBits.get(KeyEvent.VK_NUMPAD3) || keyBits.get(KeyEvent.VK_NUMPAD7))
+            }
+            if (keyBits.get(KeyEvent.VK_NUMPAD3) || keyBits.get(KeyEvent.VK_NUMPAD7)) {
                 dir.z = (m);
+            }
 
             if (dir.length() != 0.0) {
                 if (keyHandler.keyBits.get(KeyEvent.VK_ALT)) {
@@ -1229,14 +1282,16 @@ public class Visualizer3D extends JFrame {
                     windDirection(dir, true, true, false);
                 } else
                     // adjust vehicle spin rate
+                {
                     spinRateObject(vehicleViewObject, dir);
+                }
             }
-            
+
         }
     }
     // end KeyboardHandler
-    
-    
+
+
     /*
      * Thread updater
      */
@@ -1261,8 +1316,8 @@ public class Visualizer3D extends JFrame {
             }
         }
     }
-    
-    
+
+
     /*
      * System message logger
      */
@@ -1274,35 +1329,40 @@ public class Visualizer3D extends JFrame {
         private int buflen = 0;
         private final List<String> strings = new ArrayList<String>(strcap);
         private boolean mtx = false;
-        
+
         @Override
         public void write(int b) throws IOException {
             char c = (char)b;
             buf.append(c);
-            if (c == '\n' || ++buflen >= bufcap)
+            if (c == '\n' || ++buflen >= bufcap) {
                 this.flush();
+            }
         }
-        
+
         @Override
         public void flush() {
-            if (mtx)  // do not block
+            if (mtx) { // do not block
                 return;
+            }
             mtx = true;
-            while (strings.size() > numOfMessages)
+            while (strings.size() > numOfMessages) {
                 strings.remove(0);
-            
+            }
+
             String line = buf.toString().replaceAll("(.+)[\\r\\n]", "$1");
-            if (!line.isEmpty())
+            if (!line.isEmpty()) {
                 strings.add(line);
-            
+            }
+
             buflen = 0;
             buf.setLength(buflen);
             mtx = false;
         }
-        
+
         public List<String> getStrings() {
-            if (mtx)  // do not block
+            if (mtx) { // do not block
                 return new ArrayList<String>();
+            }
 
             return new ArrayList<String>(strings);
         }
@@ -1312,8 +1372,9 @@ public class Visualizer3D extends JFrame {
         }
 
         public void clearMessages() {
-            if (!mtx)
+            if (!mtx) {
                 strings.clear();
+            }
         }
 
         public int getNumOfMessages() {
