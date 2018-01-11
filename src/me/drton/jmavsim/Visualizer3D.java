@@ -6,6 +6,7 @@ import com.sun.j3d.utils.geometry.Sphere;
 import com.sun.j3d.utils.image.ImageException;
 import com.sun.j3d.utils.image.TextureLoader;
 import com.sun.j3d.utils.universe.SimpleUniverse;
+import me.drton.jmavsim.vehicle.AbstractVehicle;
 
 import javax.imageio.ImageIO;
 import javax.media.j3d.*;
@@ -55,6 +56,7 @@ public class Visualizer3D extends JFrame {
     public static final int       FPS_TARGET = 60;  // target frames per second
 
     private Dimension reportPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 350), 200);
+    private Dimension sensorParamPanelSize = new Dimension(Math.min(WINDOW_SIZE.width / 2, 250), 200);
     private boolean reportPaused = false;
 
     private int overlaySize = 260;  // width & height of compass overlay window
@@ -83,11 +85,13 @@ public class Visualizer3D extends JFrame {
     private TransformGroup viewerTransformGroup;
     private KinematicObject viewerTargetObject;
     private KinematicObject viewerPositionObject;
-    private KinematicObject vehicleViewObject;
+    private AbstractVehicle vehicleViewObject;
     private KinematicObject gimbalViewObject;
     private MAVLinkHILSystem hilSystem;
     private JSplitPane splitPane;
     private ReportPanel reportPanel;
+    private JSplitPane propertySplitPane;
+    private SensorParamPanel sensorParamPanel;
     private KeyboardHandler keyHandler;
     private OutputStream outputStream;  // for receiving system output messages
     private MessageOutputStream msgOutputStream;  // for logging messages
@@ -122,13 +126,29 @@ public class Visualizer3D extends JFrame {
         splitPane.setOneTouchExpandable(false);
         splitPane.setContinuousLayout(true);
         splitPane.setFocusable(false);
-        getContentPane().add(splitPane);
+
+        propertySplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        propertySplitPane.setOneTouchExpandable(false);
+        propertySplitPane.setContinuousLayout(true);
+        propertySplitPane.setFocusable(false);
+        propertySplitPane.setRightComponent(splitPane);
+        propertySplitPane.setDividerSize(0);
+
+        getContentPane().add(propertySplitPane);
 
         reportPanel = new ReportPanel();
         reportPanel.setFocusable(false);
         reportPanel.setMinimumSize(new Dimension(50, 0));
         reportPanel.setPreferredSize(reportPanelSize);
         splitPane.setLeftComponent(reportPanel);
+
+        // Sensor Parameter Control Panel
+        sensorParamPanel = new SensorParamPanel();
+        sensorParamPanel.setFocusable(false);
+        sensorParamPanel.setMinimumSize(new Dimension(50, 0));
+        sensorParamPanel.setPreferredSize(sensorParamPanelSize);
+        propertySplitPane.setLeftComponent(sensorParamPanel);
+        sensorParamPanel.setVisible(false);
 
         // 3D graphics canvas
         GraphicsConfiguration gc = SimpleUniverse.getPreferredConfiguration();
@@ -402,10 +422,8 @@ public class Visualizer3D extends JFrame {
      *
      * @param object
      */
-    public void setVehicleViewObject(KinematicObject object) {
+    public void setVehicleViewObject(AbstractVehicle object) {
         this.vehicleViewObject = object;
-//        if (rose != null)
-//            rose.setBaseObject(object);
     }
 
     /**
@@ -469,6 +487,26 @@ public class Visualizer3D extends JFrame {
         revalidate();
     }
 
+    public void toggleSensorControlDialog() {
+        if (sensorParamPanel == null || vehicleViewObject == null) {
+            return;
+        }
+        else if (this.sensorParamPanel.isShowing()) {
+            sensorParamPanel.setSensor(vehicleViewObject.getSensors());
+            sensorParamPanel.setVisible(false);
+            propertySplitPane.setLeftComponent(null);
+            propertySplitPane.setDividerSize(0);
+        }
+        else {
+            sensorParamPanel.setSensor(vehicleViewObject.getSensors());
+            sensorParamPanel.setVisible(true);
+            propertySplitPane.setLeftComponent(sensorParamPanel);
+        }
+
+        propertySplitPane.resetToPreferredSizes();
+        revalidate();
+    }
+    
     public void toggleReportPanel() {
         this.toggleReportPanel(!reportPanel.isShowing());
     }
@@ -1038,6 +1076,10 @@ public class Visualizer3D extends JFrame {
                     toggleReportPanel();
                     break;
 
+                case KeyEvent.VK_D :
+                    toggleSensorControlDialog();
+                    break;
+    
                 // pause/start report updates
                 case KeyEvent.VK_T :
                     setReportPaused(!reportPaused);

@@ -740,6 +740,7 @@ public class Simulator implements Runnable {
         System.out.println("   C   - Clear all messages on HUD.");
         System.out.println("   R   - Toggle data report sidebar.");
         System.out.println("   T   - Toggle data report updates.");
+        System.out.println("   D   - Toggle sensor parameter control sidebar.");
         System.out.println("   F1  - Show this key commands reference.");
         System.out.println("  ESC  - Exit jMAVSim.");
         System.out.println(" SPACE - Reset vehicle & view to start position.");
