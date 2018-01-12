@@ -32,11 +32,11 @@
     <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.class.path"/>
 
     <target name="compile" description="Compile java sources" depends="make_dirs">
-        <javac2 destdir="${classes.dir}" includeantruntime="false" debug="true">
+        <javac destdir="${classes.dir}" includeantruntime="false" debug="true">
             <classpath refid="libsclasspath"/>
             <src path="src"/>
             <src path="jMAVlib/src"/>
-        </javac2>
+        </javac>
     </target>
 
     <target name="jmavsim" description="Link classes and JARs for jMAVSim" depends="compile">
