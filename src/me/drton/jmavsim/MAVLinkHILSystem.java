@@ -251,7 +251,6 @@ public class MAVLinkHILSystem extends MAVLinkSystem {
 
         // SYSTEM TIME from host
         if (timeThrottleCounter++ % 1000 == 0) {
-            System.out.println("Sending time");
             MAVLinkMessage msg_system_time = new MAVLinkMessage(schema, "SYSTEM_TIME", sysId, componentId, protocolVersion);
             Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
             msg_system_time.set("time_unix_usec", cal.getTimeInMillis() * 1000);
