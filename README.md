@@ -188,4 +188,4 @@ Once the Collada file has been imported into blender, it is necessary to set the
 
 When exporting from Blender, choose the `Wavefront (.obj)` file format. In the export dialogue, make the following changes:
 * Adjust the orientation of the model by specifying the `Forward` and `Up` directions. For example, if the z-axis in the Blender scene is pointing upwards, the correct setting for `Up:` would be `-Z up` for jMAVSIM.
-* Ddeselect "Objects as OBJ Objects" and select "Objects as OBJ Groups" instead. Otherwise jMAVSim will fail parsing the 3D model.
+* Deselect "Objects as OBJ Objects" and select "Objects as OBJ Groups" instead. Otherwise jMAVSim will fail parsing the 3D model.
