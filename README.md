@@ -177,4 +177,15 @@ Custom MAVLink protocols can be used, no any recompilation needed, just specify 
 MAVLinkSchema schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
 ```
 
-It's convinient to start the simulator from IDE. Free and powerful "IntelliJ IDEA" IDE recommended, project files for it are already included, just open project file `jMAVSim.ipr` and right-click -> Run `Simulator`.
+It's convenient to start the simulator from IDE. Free and powerful "IntelliJ IDEA" IDE recommended, project files for it are already included, just open project file `jMAVSim.ipr` and right-click -> Run `Simulator`.
+
+
+### Exporting 3D vehicle models using Blender
+
+For custom vehicles it might be desirable to export new 3D models. One way of doing so is using [Blender](https://www.blender.org/). To import an existing model from another application into blender, (e.g. [onshape](https://cad.onshape.com)), export to the Collada (`.dae`) file format.
+
+Once the Collada file has been imported into blender, it is necessary to set the *Ambient* value in the shading property to `0.0` for all materials used. A value of `1.0` will produce white surfaces in jMAVSIM regardless of the material settings.
+
+When exporting from Blender, choose the `Wavefront (.obj)` file format. In the export dialogue, make the following changes:
+* Adjust the orientation of the model by specifying the `Forward` and `Up` directions. For example, if the z-axis in the Blender scene is pointing upwards, the correct setting for `Up:` would be `-Z up` for jMAVSIM.
+* Deselect "Objects as OBJ Objects" and select "Objects as OBJ Groups" instead. Otherwise jMAVSim will fail parsing the 3D model.
