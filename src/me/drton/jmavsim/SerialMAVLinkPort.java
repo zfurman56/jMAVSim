@@ -58,15 +58,16 @@ public class SerialMAVLinkPort extends MAVLinkPort {
             public int read(ByteBuffer buffer) throws IOException {
                 try {
                     int available = serialPort.getInputBufferBytesCount();
-                    if (available <= 0)
+                    if (available <= 0) {
                         return 0;
+                    }
 
-                    byte[] b = serialPort.readBytes(Math.min(available,buffer.remaining()));
+                    byte[] b = serialPort.readBytes(Math.min(available, buffer.remaining()));
                     if (b != null) {
                         buffer.put(b);
                         return b.length;
                     }
-                    
+
                     return 0;
 
                 } catch (SerialPortException e) {
@@ -105,9 +106,10 @@ public class SerialMAVLinkPort extends MAVLinkPort {
 
     @Override
     public void close() throws IOException {
-        if (serialPort == null)
+        if (serialPort == null) {
             return;
-        
+        }
+
         try {
             serialPort.closePort();
         } catch (SerialPortException e) {

@@ -35,17 +35,22 @@ public class Simulator implements Runnable {
 
     public static boolean   USE_SERIAL_PORT       = false;  // use serial port for MAV instead of UDP
     public static boolean   COMMUNICATE_WITH_QGC  = true;   // open UDP port to QGC
-    public static boolean   DO_MAG_FIELD_LOOKUP   = false;  // perform online mag incl/decl lookup for current position
-    public static boolean   USE_GIMBAL            = true;   // enable gimbal modeling (optionally also define remote pitch/roll controls below)
+    public static boolean   DO_MAG_FIELD_LOOKUP   =
+        false;  // perform online mag incl/decl lookup for current position
+    public static boolean   USE_GIMBAL            =
+        true;   // enable gimbal modeling (optionally also define remote pitch/roll controls below)
     public static boolean   GUI_SHOW_REPORT_PANEL = false;  // start with report panel showing
     public static boolean   GUI_START_MAXIMIZED   = false;  // start with gui in maximized window
     public static boolean   GUI_ENABLE_AA         = true;   // anti-alias on 3D scene
     public static ViewTypes GUI_START_VIEW        = ViewTypes.VIEW_STATIC;
     public static ZoomModes GUI_START_ZOOM        = ZoomModes.ZOOM_DYNAMIC;
-    public static boolean   LOG_TO_STDOUT         = true;   // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
+    public static boolean   LOG_TO_STDOUT         =
+        true;   // send System.out messages to stdout (console) as well as any custom handlers (see SystemOutHandler)
+    public static boolean DEBUG_MODE = false;
 
     public static final int    DEFAULT_SIM_SPEED = 500; // Hz
-    public static final int    DEFAULT_AUTOPILOT_SYSID = -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
+    public static final int    DEFAULT_AUTOPILOT_SYSID =
+        -1; // System ID of autopilot to communicate with. -1 to auto set ID on first received heartbeat.
     public static final String DEFAULT_AUTOPILOT_TYPE = "generic";  // eg. "px4" or "aq"
     public static final int    DEFAULT_AUTOPILOT_PORT = 14560;
     public static final int    DEFAULT_QGC_PEER_PORT = 14550;
@@ -53,7 +58,8 @@ public class Simulator implements Runnable {
     public static final int    DEFAULT_SERIAL_BAUD_RATE = 230400;
     public static final String LOCAL_HOST = "127.0.0.1";
     public static final String DEFAULT_VEHICLE_MODEL = "models/3dr_arducopter_quad_x.obj";
-    public static final String DEFAULT_GIMBAL_MODEL = "models/gimbal.png";  // blank for invisible gimbal
+    public static final String DEFAULT_GIMBAL_MODEL =
+        "models/gimbal.png";  // blank for invisible gimbal
 
     // Set global reference point
     // Zurich Irchel Park: 47.397742, 8.545594, 488m
@@ -77,10 +83,14 @@ public class Simulator implements Runnable {
     // Moscow:  (0.31337f, 0.06030f, 0.94771f)
     public static Vector3d  DEFAULT_MAG_FIELD = new Vector3d(0.44831f, 0.01664f, 0.89372f);
 
-    public static int    DEFAULT_CAM_PITCH_CHAN = 4;     // Control gimbal pitch from autopilot, -1 to disable
-    public static int    DEFAULT_CAM_ROLL_CHAN  = -1;     // Control gimbal roll from autopilot, -1 to disable
-    public static Double DEFAULT_CAM_PITCH_SCAL = 1.57;  // channel value to physical movement (+/-90 deg)
-    public static Double DEFAULT_CAM_ROLL_SCAL  = 1.57;  // channel value to physical movement (+/-90 deg)
+    public static int    DEFAULT_CAM_PITCH_CHAN =
+        4;     // Control gimbal pitch from autopilot, -1 to disable
+    public static int    DEFAULT_CAM_ROLL_CHAN  =
+        -1;     // Control gimbal roll from autopilot, -1 to disable
+    public static Double DEFAULT_CAM_PITCH_SCAL =
+        1.57;  // channel value to physical movement (+/-90 deg)
+    public static Double DEFAULT_CAM_ROLL_SCAL  =
+        1.57;  // channel value to physical movement (+/-90 deg)
 
 
     private static int sleepInterval = (int)1e6 / DEFAULT_SIM_SPEED;  // Main loop interval, in us
@@ -149,8 +159,9 @@ public class Simulator implements Runnable {
         System.out.println("Starting GUI...");  // this is the longest part of startup so let user know
         visualizer = new Visualizer3D(world);
         visualizer.setAAEnabled(GUI_ENABLE_AA);
-        if (GUI_START_MAXIMIZED)
+        if (GUI_START_MAXIMIZED) {
             visualizer.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        }
 
         // add GUI output stream handler for displaying messages
         outputHandler.addOutputStream(visualizer.getOutputStream());
@@ -173,6 +184,7 @@ public class Simulator implements Runnable {
             connCommon.addSkipMessage(schema.getMessageDefinition("HIL_ACTUATOR_CONTROLS").id);
             connCommon.addSkipMessage(schema.getMessageDefinition("HIL_SENSOR").id);
             connCommon.addSkipMessage(schema.getMessageDefinition("HIL_GPS").id);
+            connCommon.addSkipMessage(schema.getMessageDefinition("HIL_STATE_QUATERNION").id);
         }
         world.addObject(connCommon);
 
@@ -181,14 +193,17 @@ public class Simulator implements Runnable {
             //Serial port: connection to autopilot over serial.
             SerialMAVLinkPort port = new SerialMAVLinkPort(schema);
             port.setup(serialPath, serialBaudRate, 8, 1, 0);
+            port.setDebug(DEBUG_MODE);
             autopilotMavLinkPort = port;
         } else {
             UDPMavLinkPort port = new UDPMavLinkPort(schema);
-            //port.setDebug(true);
-            port.setup(autopilotIpAddress, autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
+            port.setDebug(DEBUG_MODE);
+            port.setup(autopilotIpAddress,
+                       autopilotPort); // default source port 0 for autopilot, which is a client of JMAVSim
             // monitor certain mavlink messages.
-            if (monitorMessage)
+            if (monitorMessage) {
                 port.setMonitorMessageID(monitorMessageIds);
+            }
             autopilotMavLinkPort = port;
         }
 
@@ -197,26 +212,29 @@ public class Simulator implements Runnable {
         connCommon.addNode(autopilotMavLinkPort);
         // UDP port: connection to ground station
         udpGCMavLinkPort = new UDPMavLinkPort(schema);
-        //udpGCMavLinkPort.setDebug(true);
+        udpGCMavLinkPort.setDebug(DEBUG_MODE);
         if (COMMUNICATE_WITH_QGC) {
             udpGCMavLinkPort.setup(qgcIpAddress, qgcPeerPort);
-            //udpGCMavLinkPort.setDebug(true);
-            if (monitorMessage && USE_SERIAL_PORT)
+            udpGCMavLinkPort.setDebug(DEBUG_MODE);
+            if (monitorMessage && USE_SERIAL_PORT) {
                 udpGCMavLinkPort.setMonitorMessageID(monitorMessageIds);
+            }
             connCommon.addNode(udpGCMavLinkPort);
         }
 
         // Set up magnetic field deviations
         // (do this after environment already has a reference point in case we need to look up declination manually)
-        if (DO_MAG_FIELD_LOOKUP)
+        if (DO_MAG_FIELD_LOOKUP) {
             simpleEnvironment.setMagField(magFieldLookup(referencePos));
-        else if (DEFAULT_MAG_INCL != 0.0 || DEFAULT_MAG_DECL != 0.0)
+        } else if (DEFAULT_MAG_INCL != 0.0 || DEFAULT_MAG_DECL != 0.0) {
             simpleEnvironment.setMagFieldByInclDecl(DEFAULT_MAG_INCL, DEFAULT_MAG_DECL);
-        else if (DEFAULT_MAG_FIELD.y == 0.0f && (DEFAULT_MAG_FIELD.x != 0.0 || DEFAULT_MAG_FIELD.z != 0.0)) {
+        } else if (DEFAULT_MAG_FIELD.y == 0.0f && (DEFAULT_MAG_FIELD.x != 0.0 ||
+                                                   DEFAULT_MAG_FIELD.z != 0.0)) {
             Vector3d magField = DEFAULT_MAG_FIELD;
             // Set declination based on the initialization position of the Simulator
             // getMagDeclination() returns degrees and variable decl is in radians.
-            double decl = Math.toRadians(simpleEnvironment.getMagDeclination(referencePos.lat, referencePos.lon));
+            double decl = Math.toRadians(simpleEnvironment.getMagDeclination(referencePos.lat,
+                                                                             referencePos.lon));
             //System.out.println("Declination: " + (Math.toDegrees(decl)));
             Matrix3d magDecl = new Matrix3d();
             magDecl.rotZ(decl);
@@ -261,8 +279,7 @@ public class Simulator implements Runnable {
         // Open ports
         try {
             autopilotMavLinkPort.open();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("ERROR: Failed to open MAV port: " + e.getLocalizedMessage());
             shutdown = true;
         }
@@ -270,8 +287,7 @@ public class Simulator implements Runnable {
         if (COMMUNICATE_WITH_QGC) {
             try {
                 udpGCMavLinkPort.open();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 System.out.println("ERROR: Failed to open UDP link to QGC: " + e.getLocalizedMessage());
             }
         }
@@ -285,17 +301,21 @@ public class Simulator implements Runnable {
                     Thread.sleep(200);
 
                     System.out.println("Shutting down...");
-                    if (hilSystem != null)
+                    if (hilSystem != null) {
                         hilSystem.endSim();
+                    }
 
                     // Close ports
-                    if (autopilotMavLinkPort != null && autopilotMavLinkPort.isOpened())
+                    if (autopilotMavLinkPort != null && autopilotMavLinkPort.isOpened()) {
                         autopilotMavLinkPort.close();
-                    if (udpGCMavLinkPort != null && udpGCMavLinkPort.isOpened())
+                    }
+                    if (udpGCMavLinkPort != null && udpGCMavLinkPort.isOpened()) {
                         udpGCMavLinkPort.close();
+                    }
 
-                    if (thisHandle != null)
+                    if (thisHandle != null) {
                         thisHandle.cancel(true);
+                    }
                     executor.shutdown();
 
                 } catch (InterruptedException | IOException e) {
@@ -304,11 +324,12 @@ public class Simulator implements Runnable {
             }
         });
 
-        while(true) {
+        while (true) {
             Thread.sleep(100);
 
-            if (shutdown)
+            if (shutdown) {
                 break;
+            }
         }
 
         System.exit(0);
@@ -341,7 +362,7 @@ public class Simulator implements Runnable {
     private AbstractMulticopter buildMulticopter() {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
         AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "default",
-                                                        0.33 / 2, 4.0, 0.05, 0.005, gc);
+                                                     0.33 / 2, 4.0, 0.05, 0.005, gc);
         Matrix3d I = new Matrix3d();
         // Moments of inertia
         I.m00 = 0.005;  // X
@@ -367,7 +388,8 @@ public class Simulator implements Runnable {
     // 200mm, 250g small quad X "Leora" with AutoQuad style layout (clockwise from front)
     private AbstractMulticopter buildAQ_leora() {
         Vector3d gc = new Vector3d(0.0, 0.0, 0.0);  // gravity center
-        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "cw_fr", 0.1, 1.35, 0.02, 0.0005, gc);
+        AbstractMulticopter vehicle = new Quadcopter(world, DEFAULT_VEHICLE_MODEL, "x", "cw_fr", 0.1, 1.35,
+                                                     0.02, 0.0005, gc);
 
         Matrix3d I = new Matrix3d();
         // Moments of inertia
@@ -412,8 +434,7 @@ public class Simulator implements Runnable {
                 reachedApogee = true;
                 System.out.printf("\nPeak altitude: %f\n\n", -vehicle.position.z);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.err.println("Exception in Simulator.world.update() : ");
             e.printStackTrace();
             executor.shutdown();
@@ -436,14 +457,15 @@ public class Simulator implements Runnable {
         String resp, vals[];
 
         String reqUrl = "http://www.ngdc.noaa.gov/geomag-web/calculators/calculateIgrfwmm?";
-        reqUrl += "resultFormat=csv&coordinateSystem=M&lat1=" + pos.lat + "&lon1=" + pos.lon + "&elevation=" + pos.alt / 1e3;
+        reqUrl += "resultFormat=csv&coordinateSystem=M&lat1=" + pos.lat + "&lon1=" + pos.lon + "&elevation="
+                  + pos.alt / 1e3;
         System.out.println("Attempting magnetic field data lookup from NOAA...");
         try {
             InputStream instr = new URL(reqUrl).openStream();
             Scanner scan = new Scanner(instr, "UTF-8");
             resp = scan.useDelimiter("\\A").hasNext() ? scan.next() : "";
             String lines[] = resp.split("\n");
-            vals = lines[lines.length-1].split(",");
+            vals = lines[lines.length - 1].split(",");
             scan.close();
             instr.close();
         } catch (IOException e) {
@@ -466,10 +488,14 @@ public class Simulator implements Runnable {
             Matrix3d declMtx = new Matrix3d();
             declMtx.rotZ(decl);
             declMtx.transform(magField);
-            System.out.printf("Result Vectors: Vector3d(%.5f, %.5f, %.5f) \n", magField.x, magField.y, magField.z);
-            System.out.printf("       Declination: %.5f; Inclination: %.5f \n", Math.toDegrees(Math.atan2(magField.y, magField.x)), Math.toDegrees(Math.atan2(magField.z, magField.x)));
-        } else
+            System.out.printf("Result Vectors: Vector3d(%.5f, %.5f, %.5f) \n", magField.x, magField.y,
+                              magField.z);
+            System.out.printf("       Declination: %.5f; Inclination: %.5f \n",
+                              Math.toDegrees(Math.atan2(magField.y, magField.x)), Math.toDegrees(Math.atan2(magField.z,
+                                      magField.x)));
+        } else {
             System.err.println("Error parsing response: " + resp + "\n");
+        }
 
         return magField;
     }
@@ -486,13 +512,16 @@ public class Simulator implements Runnable {
     public final static String GUI_VIEW_STRING = "-view (fpv|grnd|gmbl)";
     public final static String AP_STRING = "-ap <autopilot_type>";
     public final static String SPEED_STRING = "-r <Hz>";
-    public final static String CMD_STRING = "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
+    public final static String CMD_STRING =
+        "java [-Xmx512m] -cp lib/*:out/production/jmavsim.jar me.drton.jmavsim.Simulator";
     public final static String CMD_STRING_JAR = "java [-Xmx512m] -jar jmavsim_run.jar";
-    public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " + SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " +
-                                              "[" + QGC_STRING + "] [" + GIMBAL_STRING + "] [" + GUI_AA_STRING + "] [" + GUI_MAX_STRING + "] [" + GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
+    public final static String USAGE_STRING = CMD_STRING_JAR + " [-h] [" + UDP_STRING + " | " +
+                                              SERIAL_STRING + "] [" + SPEED_STRING + "] [" + AP_STRING + "] [" + MAG_STRING + "] " +
+                                              "[" + QGC_STRING + "] [" + GIMBAL_STRING + "] [" + GUI_AA_STRING + "] [" + GUI_MAX_STRING + "] [" +
+                                              GUI_VIEW_STRING + "] [" + REP_STRING + "] [" + PRINT_INDICATION_STRING + "]";
 
     public static void main(String[] args)
-            throws InterruptedException, IOException {
+    throws InterruptedException, IOException {
 
         int i = 0;
         while (i < args.length) {
@@ -527,8 +556,7 @@ public class Simulator implements Runnable {
                     // if user ONLY passes in -m, monitor all messages.
                     continue;
                 }
-            }
-            else if (arg.equalsIgnoreCase("-udp")) {
+            } else if (arg.equalsIgnoreCase("-udp")) {
                 USE_SERIAL_PORT = false;
                 if (i == args.length) {
                     // only arg is -udp, so use default values.
@@ -569,7 +597,7 @@ public class Simulator implements Runnable {
                     i--;
                     continue;
                 }
-                if ( (i+1) <= args.length) {
+                if ((i + 1) <= args.length) {
                     try {
                         serialPath = nextArg;
                         serialBaudRate = Integer.parseInt(args[i++]);
@@ -578,39 +606,40 @@ public class Simulator implements Runnable {
                         return;
                     }
                 } else {
-                    System.err.println("-serial needs two arguments. Expected: " + SERIAL_STRING + ", got: " + Arrays.toString(args));
+                    System.err.println("-serial needs two arguments. Expected: " + SERIAL_STRING + ", got: " +
+                                       Arrays.toString(args));
                     return;
                 }
             } else if (arg.equals("-qgc")) {
-              COMMUNICATE_WITH_QGC = true;
-              if (i == args.length) {
-                  // only arg is -qgc, so use default values.
-                  break;
-              }
-              if (i < args.length) {
-                  String nextArg = args[i++];
-                  if (nextArg.startsWith("-")) {
-                      // only turning on udp, but want to use default ports
-                      i--;
-                      continue;
-                  }
-                  try {
-                      // try to parse passed-in ports.
-                      String[] list = nextArg.split(":");
-                      if (list.length != 2) {
-                          System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(list));
-                          return;
-                      }
-                      qgcIpAddress = list[0];
-                      qgcPeerPort = Integer.parseInt(list[1]);
-                  } catch (NumberFormatException e) {
-                      System.err.println("Expected: " + QGC_STRING + ", got: " + e.toString());
-                      return;
-                  }
-              } else {
-                  System.err.println("-qgc needs an argument: " + QGC_STRING);
-                  return;
-              }
+                COMMUNICATE_WITH_QGC = true;
+                if (i == args.length) {
+                    // only arg is -qgc, so use default values.
+                    break;
+                }
+                if (i < args.length) {
+                    String nextArg = args[i++];
+                    if (nextArg.startsWith("-")) {
+                        // only turning on udp, but want to use default ports
+                        i--;
+                        continue;
+                    }
+                    try {
+                        // try to parse passed-in ports.
+                        String[] list = nextArg.split(":");
+                        if (list.length != 2) {
+                            System.err.println("Expected: " + QGC_STRING + ", got: " + Arrays.toString(list));
+                            return;
+                        }
+                        qgcIpAddress = list[0];
+                        qgcPeerPort = Integer.parseInt(list[1]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Expected: " + QGC_STRING + ", got: " + e.toString());
+                        return;
+                    }
+                } else {
+                    System.err.println("-qgc needs an argument: " + QGC_STRING);
+                    return;
+                }
             } else if (arg.equals("-ap")) {
                 if (i < args.length) {
                     autopilotType = args[i++];
@@ -636,14 +665,15 @@ public class Simulator implements Runnable {
                 String t;
                 if (i < args.length) {
                     t = args[i++];
-                    if (t.equals("fpv"))
+                    if (t.equals("fpv")) {
                         GUI_START_VIEW = ViewTypes.VIEW_FPV;
-                    else if (t.equals("grnd"))
+                    } else if (t.equals("grnd")) {
                         GUI_START_VIEW = ViewTypes.VIEW_STATIC;
-                    else if (t.equals("gmbl"))
+                    } else if (t.equals("gmbl")) {
                         GUI_START_VIEW = ViewTypes.VIEW_GIMBAL;
-                    else
+                    } else {
                         System.out.println("Warning: Unrecognized value for -view option, ignoring.");
+                    }
                 } else {
                     System.err.println("-view requires an argument: " + GUI_VIEW_STRING);
                     return;
@@ -662,6 +692,8 @@ public class Simulator implements Runnable {
                 USE_GIMBAL = true;
             } else if (arg.equals("-no-gimbal")) {
                 USE_GIMBAL = false;
+            } else if (arg.equals("-debug")) {
+                DEBUG_MODE = true;
             } else {
                 System.err.println("Unknown flag: " + arg + ", usage: " + USAGE_STRING);
                 return;
@@ -679,12 +711,14 @@ public class Simulator implements Runnable {
     }
 
     public static void handleHelpFlag() {
-        String viewType = (GUI_START_VIEW == ViewTypes.VIEW_FPV ? "fpv" : GUI_START_VIEW == ViewTypes.VIEW_GIMBAL ? "gmbl" : "grnd");
+        String viewType = (GUI_START_VIEW == ViewTypes.VIEW_FPV ? "fpv" : GUI_START_VIEW ==
+                           ViewTypes.VIEW_GIMBAL ? "gmbl" : "grnd");
 
         System.out.println("\nUsage: " + USAGE_STRING + "\n");
         System.out.println("Command-line options:\n");
         System.out.println(UDP_STRING);
-        System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress + ":" + autopilotPort + ").");
+        System.out.println("      Open a TCP/IP UDP connection to the MAV (default: " + autopilotIpAddress +
+                           ":" + autopilotPort + ").");
         System.out.println(SERIAL_STRING);
         System.out.println("      Open a serial connection to the MAV instead of UDP.");
         System.out.println("      Default path/baud is: " + serialPath + " " + serialBaudRate + "");
@@ -692,19 +726,22 @@ public class Simulator implements Runnable {
         System.out.println("      Refresh rate at which jMAVSim runs. This dictates the frequency");
         System.out.println("      of the HIL_SENSOR messages. Default is " + DEFAULT_SIM_SPEED + " Hz");
         System.out.println(AP_STRING);
-        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType + "");
+        System.out.println("      Specify the MAV type. E.g. 'px4' or 'aq'. Default is: " + autopilotType +
+                           "");
         System.out.println(MAG_STRING);
         System.out.println("      Attempt automatic magnetic field inclination/declination lookup");
         System.out.println("      for starting global position via NOAA Web service.");
         System.out.println(QGC_STRING);
-        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" + qgcPeerPort + "");
+        System.out.println("      Forward message packets to QGC via UDP at " + qgcIpAddress + ":" +
+                           qgcPeerPort + "");
         System.out.println(GIMBAL_STRING);
-        System.out.println("      Enable/Disable the gimbal model. Default is '" + USE_GIMBAL +"'.");
+        System.out.println("      Enable/Disable the gimbal model. Default is '" + USE_GIMBAL + "'.");
         System.out.println(GUI_AA_STRING);
-        System.out.println("      Enable/Disable anti-aliasing on 3D scene. Default is '" + GUI_ENABLE_AA +"'.");
+        System.out.println("      Enable/Disable anti-aliasing on 3D scene. Default is '" + GUI_ENABLE_AA +
+                           "'.");
         System.out.println(GUI_VIEW_STRING);
         System.out.println("      Start with the specified view type. One of: 'fpv', 'grnd', or 'gmbl'.");
-        System.out.println("      Default is '" + viewType +"'.");
+        System.out.println("      Default is '" + viewType + "'.");
         System.out.println(GUI_MAX_STRING);
         System.out.println("      Start with the visualizer GUI window maximized.");
         System.out.println(REP_STRING);
@@ -735,6 +772,7 @@ public class Simulator implements Runnable {
         System.out.println("   C   - Clear all messages on HUD.");
         System.out.println("   R   - Toggle data report sidebar.");
         System.out.println("   T   - Toggle data report updates.");
+        System.out.println("   D   - Toggle sensor parameter control sidebar.");
         System.out.println("   F1  - Show this key commands reference.");
         System.out.println("  ESC  - Exit jMAVSim.");
         System.out.println(" SPACE - Reset vehicle & view to start position.");

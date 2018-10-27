@@ -53,7 +53,8 @@ public class UDPMavLinkPort extends MAVLinkPort {
         this.peerPort = new InetSocketAddress(peerAddress, peerPort);
         this.bindPort = new InetSocketAddress("0.0.0.0", 0);
         if (debug) {
-            System.out.println("peerAddress: " + this.peerPort.toString() + ", bindAddress: " + this.bindPort.toString());
+            System.out.println("peerAddress: " + this.peerPort.toString() + ", bindAddress: " +
+                               this.bindPort.toString());
         }
     }
 
@@ -63,6 +64,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
         channel.configureBlocking(false);
         channel.connect(peerPort);
         stream = new MAVLinkStream(schema, channel);
+        stream.setDebug(debug);
     }
 
     @Override
@@ -79,7 +81,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
 
     @Override
     public void handleMessage(MAVLinkMessage msg) {
-        if (debug) System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+        if (debug) { System.out.println("[handleMessage] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType()); }
 
         try {
             /*SocketAddress remote =*/ channel.getRemoteAddress();
@@ -104,11 +106,11 @@ public class UDPMavLinkPort extends MAVLinkPort {
             int count = 0;
             // if the list of messages to monitor is empty, but the flag is on, monitor all messages.
             if (monitorMessageIDs.isEmpty()) {
-                if (messageCounts.containsKey(type)) count = messageCounts.get(type);
+                if (messageCounts.containsKey(type)) { count = messageCounts.get(type); }
                 shouldPrint = count >= MONITOR_MESSAGE_RATE;
             } else {
                 // otherwise, only print messages in the list of message IDs we're monitoring.
-                if (messageCounts.containsKey(type)) count = messageCounts.get(type);
+                if (messageCounts.containsKey(type)) { count = messageCounts.get(type); }
                 shouldPrint = count >= MONITOR_MESSAGE_RATE && monitorMessageIDs.contains(type);
             }
             printMessage(shouldPrint, count, type);
@@ -126,7 +128,7 @@ public class UDPMavLinkPort extends MAVLinkPort {
                 time++;
             }
         } else {
-            messageCounts.put(type, count+1);
+            messageCounts.put(type, count + 1);
         }
     }
 
@@ -135,10 +137,12 @@ public class UDPMavLinkPort extends MAVLinkPort {
         while (isOpened()) {
             try {
                 MAVLinkMessage msg = stream.read();
-                if (msg == null)
+                if (msg == null) {
                     break;
-                if (debug)
+                }
+                if (debug) {
                     System.out.println("[update] msg.name: " + msg.getMsgName() + ", type: " + msg.getMsgType());
+                }
                 IndicateReceivedMessage(msg.getMsgType());
                 sendMessage(msg);
             } catch (IOException e) {

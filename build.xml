@@ -21,6 +21,16 @@
         <pathelement location="lib/annotations.jar"/>
     </path>
 
+    <path id="javac2.class.path">
+        <pathelement location="lib/annotations.jar"/>
+        <pathelement location="lib/javac2.jar"/>
+        <pathelement location="lib/asm4-all.jar"/>
+        <pathelement location="lib/jdom.jar"/>
+        <pathelement location="lib/vecmath.jar"/>
+    </path>
+
+    <taskdef name="javac2" classname="com.intellij.ant.Javac2" classpathref="javac2.class.path"/>
+
     <target name="compile" description="Compile java sources" depends="make_dirs">
         <javac destdir="${classes.dir}" includeantruntime="false" debug="true">
             <classpath refid="libsclasspath"/>
@@ -55,6 +65,7 @@
             <zipfileset dir="lib" includes="jogl-all.jar"/>
             <zipfileset dir="lib" includes="jssc.jar"/>
             <zipfileset dir="lib" includes="vecmath.jar"/>
+            <zipgroupfileset dir="lib" includes="forms_rt.jar"/>
 
             <!-- OS-specific jars (can exclude any you don't need) -->
 

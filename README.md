@@ -3,12 +3,16 @@
 
 Simple multirotor simulator with MAVLink protocol support
 
+![screenshot](art/screenshot.png)
+
 ### Installation ###
 
 Requirements:
- * Java 6 or newer (JDK, http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+ * Java 7 or newer (JDK, http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
  * Java3D and JOGL/JOAL jars, including native libs for Linux (i586/64bit), Windows (i586/64bit) and Mac OS (universal) already included in this repository, no need to install it.
+
+ * libvecmath-java (for ubuntu)
 
 Clone repository and initialize submodules:
 ```
@@ -61,6 +65,47 @@ On **Windows** use `;` instead of `:` in -cp:
 java -cp lib/*;out/production/jmavsim.jar me.drton.jmavsim.Simulator
 ```
 
+#### Key command ####
+
+Views:
+-    F    - First-person-view camera.
+-    S    - Stationary ground camera.
+-    G    - Gimbal camera.
+-    Z    - Toggle auto-zoom for Stationary camera.
+-   +/-   - Zoom in/out
+- 0/ENTER - Reset zoom to default.
+
+Actions:
+-   Q   - Disable sim on MAV.
+-   I   - Enable sim on MAV.
+-   H   - Toggle HUD overlay.
+-   C   - Clear all messages on HUD.
+-   R   - Toggle data report sidebar.
+-   T   - Toggle data report updates.
+-   D   - Toggle sensor parameter control sidebar.
+-   F1  - Show this key commands reference.
+-  ESC  - Exit jMAVSim.
+- SPACE - Reset vehicle & view to start position.
+
+Manipulate Vehicle:
+-  ARROW KEYS      - Rotate around pitch/roll.
+-  END/PG-DN       - Rotate CCW/CW around yaw.
+-  SHIFT + ARROWS  - Move N/S/E/W.
+-  SHIFT + INS/DEL - Move Up/Down.
+-  NUMPAD 8/2/4/6  - Start/increase rotation rate around pitch/roll axis.
+-  NUMPAD 1/3      - Start/increase rotation rate around yaw axis.
+-  NUMPAD 5        - Stop all rotation.
+-  CTRL + NUMPAD 5 - Reset vehicle attitude, velocity, & accelleration.
+
+Manipulate Environment:
+- ALT +
+    - ARROW KEYS      - Increase wind deviation in N/S/E/W direction.
+    - INS/DEL         - Increase wind deviation in Up/Down direction.
+    - NUMPAD 8/2/4/6  - Increase wind speed in N/S/E/W direction.
+    - NUMPAD 7/1      - Increase wind speed in Up/Down direction.
+    - NUMPAD 5        - Stop all wind and deviations.
+
+- CTRL+ Manipulate - Rotate/move/increase at a higher/faster rate.
 
 ### Troubleshooting ###
 
@@ -132,4 +177,15 @@ Custom MAVLink protocols can be used, no any recompilation needed, just specify 
 MAVLinkSchema schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
 ```
 
-It's convinient to start the simulator from IDE. Free and powerful "IntelliJ IDEA" IDE recommended, project files for it are already included, just open project file `jMAVSim.ipr` and right-click -> Run `Simulator`.
+It's convenient to start the simulator from IDE. Free and powerful "IntelliJ IDEA" IDE recommended, project files for it are already included, just open project file `jMAVSim.ipr` and right-click -> Run `Simulator`.
+
+
+### Exporting 3D vehicle models using Blender
+
+For custom vehicles it might be desirable to export new 3D models. One way of doing so is using [Blender](https://www.blender.org/). To import an existing model from another application into blender, (e.g. [onshape](https://cad.onshape.com)), export to the Collada (`.dae`) file format.
+
+Once the Collada file has been imported into blender, it is necessary to set the *Ambient* value in the shading property to `0.0` for all materials used. A value of `1.0` will produce white surfaces in jMAVSIM regardless of the material settings.
+
+When exporting from Blender, choose the `Wavefront (.obj)` file format. In the export dialogue, make the following changes:
+* Adjust the orientation of the model by specifying the `Forward` and `Up` directions. For example, if the z-axis in the Blender scene is pointing upwards, the correct setting for `Up:` would be `-Z up` for jMAVSIM.
+* Deselect "Objects as OBJ Objects" and select "Objects as OBJ Groups" instead. Otherwise jMAVSim will fail parsing the 3D model.

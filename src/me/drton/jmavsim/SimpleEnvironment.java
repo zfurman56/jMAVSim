@@ -11,10 +11,10 @@ public class SimpleEnvironment extends Environment {
     public static final double Pb = 101325.0;  // static pressure at sea level [Pa]
     public static final double Tb = 288.15;    // standard temperature at sea level [K]
     public static final double Lb = -0.0065;   // standard temperature lapse rate [K/m]
-    public static final double M = 0.0289644;  // molar mass of Earth’s air [kg/mol]
+    public static final double M = 0.0289644;  // molar mass of Earth's air [kg/mol]
     public static final double G = 9.80665;    // gravity
     public static final double R = 8.31432;    // universal gas constant
-    
+
     private Random random = new Random();
     private long lastTime = 0;
 
@@ -26,10 +26,11 @@ public class SimpleEnvironment extends Environment {
 
     @Override
     public void setG(Vector3d grav) {
-        if (grav == null)
+        if (grav == null) {
             g = new Vector3d(0.0, 0.0, G);
-        else
+        } else {
             g = grav;
+        }
     }
 
     public void update(long t) {
@@ -50,7 +51,7 @@ public class SimpleEnvironment extends Environment {
      * Convert altitude to barometric pressure
      *
      * @param alt        Altitude in meters
-     * 
+     *
      * @return Barometric pressure in Pa
      */
     public static double alt2baro(double alt) {
@@ -67,16 +68,15 @@ public class SimpleEnvironment extends Environment {
 
 
     // Mag declination calculator
-    
+
     /** set this always to the sampling in degrees for the table below */
     private int SAMPLING_RES      = 10;
     private int SAMPLING_MIN_LAT  = -60;
     private int SAMPLING_MAX_LAT  = 60;
     private int SAMPLING_MIN_LON  = -180;
     private int SAMPLING_MAX_LON  = 180;
-    
-    private int[][] declination_table =
-    {
+
+    private int[][] declination_table = {
         { 46, 45, 44, 42, 41, 40, 38, 36, 33, 28, 23, 16, 10, 4, -1, -5, -9, -14, -19, -26, -33, -40, -48, -55, -61, -66, -71, -74, -75, -72, -61, -25, 22, 40, 45, 47, 46 },
         { 30, 30, 30, 30, 29, 29, 29, 29, 27, 24, 18, 11, 3, -3, -9, -12, -15, -17, -21, -26, -32, -39, -45, -51, -55, -57, -56, -53, -44, -31, -14, 0, 13, 21, 26, 29, 30 },
         { 21, 22, 22, 22, 22, 22, 22, 22, 21, 18, 13, 5, -3, -11, -17, -20, -21, -22, -23, -25, -29, -35, -40, -44, -45, -44, -40, -32, -22, -12, -3, 3, 9, 14, 18, 20, 21 },
@@ -95,7 +95,7 @@ public class SimpleEnvironment extends Environment {
     private double get_lookup_table_val(int lat_index, int lon_index) {
         return declination_table[lat_index][lon_index];
     }
-    
+
     /**
      * Get the mag declination at this point
      *
@@ -110,7 +110,7 @@ public class SimpleEnvironment extends Environment {
          * would be.
          */
         if (lat < -90.0f || lat > 90.0f ||
-            lon < -180.0f || lon > 180.0f) {
+                lon < -180.0f || lon > 180.0f) {
             return 0.0f;
         }
 
@@ -150,8 +150,10 @@ public class SimpleEnvironment extends Environment {
 
         /* perform bilinear interpolation on the four grid corners */
 
-        double declination_min = ((lon - min_lon) / SAMPLING_RES) * (declination_se - declination_sw) + declination_sw;
-        double declination_max = ((lon - min_lon) / SAMPLING_RES) * (declination_ne - declination_nw) + declination_nw;
+        double declination_min = ((lon - min_lon) / SAMPLING_RES) * (declination_se - declination_sw) +
+                                 declination_sw;
+        double declination_max = ((lon - min_lon) / SAMPLING_RES) * (declination_ne - declination_nw) +
+                                 declination_nw;
 
         return ((lat - min_lat) / SAMPLING_RES) * (declination_max - declination_min) + declination_min;
     }

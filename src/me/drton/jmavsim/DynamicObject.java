@@ -13,7 +13,7 @@ public abstract class DynamicObject extends KinematicObject {
     protected double mass = 1.0;
     protected Matrix3d momentOfInertia = new Matrix3d();
     protected Matrix3d momentOfInertiaInv = new Matrix3d();
-    
+
     // temp storage objects for calculations
     private Vector3d tmpVec = new Vector3d();
     private Vector3d angularAcc = new Vector3d();
@@ -45,7 +45,7 @@ public abstract class DynamicObject extends KinematicObject {
         if (lastTime >= 0) {
             double dt = Math.max((t - lastTime) / 1000.0, 0.001);  // constrain time step
             double grnd = getWorld().getEnvironment().getGroundLevelAt(position);
- 
+
             // Position
             tmpVec.set(velocity);
             tmpVec.scale(dt);
@@ -53,8 +53,9 @@ public abstract class DynamicObject extends KinematicObject {
             // Velocity
             acceleration = getForce();
             acceleration.scale(1.0 / mass);
-            if (!ignoreGravity)
+            if (!ignoreGravity) {
                 acceleration.add(getWorld().getEnvironment().getG());
+            }
             if (position.z >= grnd && velocity.z + acceleration.z * dt >= 0.0) {
                 // On ground
 //                acceleration.x = -velocity.x / dt;

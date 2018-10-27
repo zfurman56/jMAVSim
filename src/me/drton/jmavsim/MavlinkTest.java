@@ -12,7 +12,7 @@ import java.io.IOException;
  */
 public class MavlinkTest {
     public static void main(String[] args)
-            throws InterruptedException, IOException, ParserConfigurationException, SAXException {
+    throws InterruptedException, IOException, ParserConfigurationException, SAXException {
         World world = new World();
         MAVLinkSchema schema = new MAVLinkSchema("mavlink/message_definitions/common.xml");
         MAVLinkConnection connection = new MAVLinkConnection(world);

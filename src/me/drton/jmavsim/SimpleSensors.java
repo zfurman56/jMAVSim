@@ -34,6 +34,13 @@ public class SimpleSensors implements Sensors {
     private float epvLow = 0.4f;     // final GPS vertical estimation accuracy
     private float fix3Deph = 3.0f;   // maximum h-acc for a "3D" fix
     private float fix2Deph = 4.0f;   // maximum h-acc for a "2D" fix
+    // gps noise
+    private float gpsNoiseStdDev = 10.f;
+    private double randomWalkGpsX = 0.0;
+    private double randomWalkGpsY = 0.0;
+    private double randomWalkGpsZ = 0.0;
+    private double gpsCorrelationTime = 30.0;
+    private long prevUpdateTime = 0;
     // accuracy smoothing filters, slowly improve h/v accuracy after startup
     private Filter ephFilter = new Filter();
     private Filter epvFilter = new Filter();
@@ -46,7 +53,7 @@ public class SimpleSensors implements Sensors {
         ephFilter.filterInit(1.0 / gpsInterval, 0.9, ephHigh);
         epvFilter.filterInit(1.0 / gpsInterval, 0.9, epvHigh);
     }
-    
+
     @Override
     public void setObject(DynamicObject object) {
         this.object = object;
@@ -153,13 +160,39 @@ public class SimpleSensors implements Sensors {
     public LatLonAlt getGlobalPosition() {
         return globalPosition;
     }
-    
+
     public void setGlobalPosition(Vector3d pos) {
-        if (pos == null)
+        if (pos == null) {
             pos = object.getPosition();
-        globalPosition = globalProjector.reproject(new double[]{pos.x, pos.y, pos.z});
+        }
+
+        long t = System.currentTimeMillis();
+        double dt = 0.0;
+        if (prevUpdateTime > 0) {
+            dt = (t - this.prevUpdateTime) * 1e-3;
+        }
+
+        // add noise (random walk)
+        if (dt > 0.0) {
+            double sqrtDt = java.lang.Math.sqrt(dt);
+            double noiseX = sqrtDt * randomNoise(gpsNoiseStdDev);
+            double noiseY = sqrtDt * randomNoise(gpsNoiseStdDev);
+            double noiseZ = sqrtDt * randomNoise(gpsNoiseStdDev);
+
+            this.randomWalkGpsX += noiseX * dt - this.randomWalkGpsX / gpsCorrelationTime;
+            this.randomWalkGpsY += noiseY * dt - this.randomWalkGpsY / gpsCorrelationTime;
+            this.randomWalkGpsZ += noiseZ * dt - this.randomWalkGpsZ / gpsCorrelationTime;
+        }
+
+        double noiseGpsX = pos.x + this.randomWalkGpsX;
+        double noiseGpsY = pos.y + this.randomWalkGpsY;
+        double noiseGpsZ = pos.z + this.randomWalkGpsZ;
+
+        globalPosition = globalProjector.reproject(new double[] {noiseGpsX, noiseGpsY, noiseGpsZ});
+
+        this.prevUpdateTime = t;
     }
-    
+
     @Override
     public boolean isGPSUpdated() {
         boolean res = gpsUpdated;
@@ -171,7 +204,7 @@ public class SimpleSensors implements Sensors {
     public void update(long t) {
         float eph, epv;
         setGlobalPosition(null);
-        
+
         // GPS
         if (gpsStartTime > -1 && t > gpsStartTime && gpsNext <= t) {
             gpsNext = t + gpsInterval;
@@ -179,8 +212,8 @@ public class SimpleSensors implements Sensors {
             GNSSReport gpsCurrent = new GNSSReport();
             eph = (float)ephFilter.filter(ephLow);
             epv = (float)epvFilter.filter(epvLow);
-            
-            gpsCurrent.position = globalPosition; //LatLonAlt.fromVector3d(addZeroMeanNoise(globalPosition.toVector3d(), 0.000001));
+
+            gpsCurrent.position = globalPosition;
             gpsCurrent.eph = eph;
             gpsCurrent.epv = epv;
             gpsCurrent.velocity = new Vector3d(object.getVelocity());
@@ -189,8 +222,59 @@ public class SimpleSensors implements Sensors {
             gps = gpsDelayLine.getOutput(t, gpsCurrent);
         }
     }
-    
-    
+
+    @Override
+    public void setParameter(String name, float value) {
+        if ( name.equals("noise_Acc") ) {
+            noise_Acc = value;
+        }
+        else if ( name.equals("noise_Gyo") ) {
+            noise_Gyo = value;
+        }
+        else if ( name.equals("noise_Mag") ) {
+            noise_Mag = value;
+        }
+        else if ( name.equals("noise_Prs") ) {
+            noise_Prs = value;
+        }
+        else if ( name.equals("gpsNoiseStdDev") ) {
+            gpsNoiseStdDev = value;
+        }
+        else if ( name.equals("mass")) {
+            object.setMass((double)value);
+        }
+        else {
+            System.out.printf("ERROR: unknown param");
+        }
+    }
+
+    @Override
+    public float param(String name) {
+        if ( name.equals("noise_Acc") ) {
+            return noise_Acc;
+        }
+        else if ( name.equals("noise_Gyo") ) {
+            return noise_Gyo;
+        }
+        else if ( name.equals("noise_Mag") ) {
+            return noise_Mag;
+        }
+        else if ( name.equals("noise_Prs") ) {
+            return noise_Prs;
+        }
+        else if ( name.equals("gpsNoiseStdDev") ) {
+            return gpsNoiseStdDev;
+        }
+        else if ( name.equals("mass") ) {
+            return (float)object.getMass();
+        }
+        else {
+            System.out.printf("ERROR: unknown param");
+        }
+
+        return 0.0f;
+    }
+
     // Utility methods
 
     public double randomNoise(float stdDev) {

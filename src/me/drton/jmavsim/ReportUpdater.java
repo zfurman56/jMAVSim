@@ -30,13 +30,19 @@ public class ReportUpdater extends WorldObject {
     public static void resetUpdateFreq() {
         setUpdateFreq(UPDATE_FREQ_MS);
     }
-    
+
     @Override
     public void update(long t) {
-        if (t < nextUpdateT)
+        if (t < nextUpdateT) {
             return;
+        }
 
         nextUpdateT = t + updateFreq;
+
+        if (!visualizer.showReportText()) {
+            return;
+        }
+
         builder.setLength(0);
 
         for (WorldObject object : getWorld().getObjects()) {

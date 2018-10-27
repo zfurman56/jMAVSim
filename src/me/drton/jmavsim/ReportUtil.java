@@ -30,7 +30,7 @@ public final class ReportUtil {
     /**
      * Converts a vector of radians to a vector of degrees
      */
-    public static Vector3d vectRad2Deg (Vector3d v) {
+    public static Vector3d vectRad2Deg(Vector3d v) {
         return new Vector3d(Math.toDegrees(v.x), Math.toDegrees(v.y), Math.toDegrees(v.z));
     }
 }
